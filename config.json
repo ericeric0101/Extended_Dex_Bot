@@ -1,0 +1,41 @@
+{
+  "stp": "ACCOUNT",
+  "quote_loop_ms": 1000,
+  "replace_coalesce_ms": 400,
+  "dead_mans_switch_sec": 120,
+  "risk": {
+    "max_net_position_usd": 1000,
+    "max_open_orders": 20,
+    "min_balance_usd": 50
+  },
+  "markets": [
+    {
+      "name": "BTC-USD",
+      "leverage": 5,
+      "K": 0.0005,
+      "alpha": 0.5,
+      "beta": 0.25,
+      "quote_notional_cap_usd": 50,
+      "replace_threshold_bps": 2,
+      "min_order_size": 0.0002,
+      "post_only": true,
+      "enabled": false
+    },
+    {
+      "name": "ETH-USD",
+      "leverage": 5,
+      "K": 0.0005,
+      "alpha": 0.5,
+      "beta": 0.25,
+      "quote_notional_cap_usd": 25,
+      "replace_threshold_bps": 2,
+      "min_order_size": 0.01,
+      "post_only": true,
+      "enabled": true
+    }
+  ],
+  "fees_override": {
+    "makerFeeRate": null,
+    "takerFeeRate": null
+  }
+}
