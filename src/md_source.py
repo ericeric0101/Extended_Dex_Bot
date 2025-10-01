@@ -49,13 +49,39 @@ class MarketDataSource:
             yield json.loads(raw)
 
     def _parse_orderbook(self, market: str, payload: Dict) -> Optional[OrderbookSnapshot]:
-        bids = payload.get("bids") or payload.get("buy" )
-        asks = payload.get("asks") or payload.get("sell")
+        data = payload.get("data", payload)
+        if not isinstance(data, dict):
+            return None
+
+        book_section = data.get("orderbook", data)
+        if isinstance(book_section, dict):
+            bids = book_section.get("bids") or book_section.get("buy")
+            asks = book_section.get("asks") or book_section.get("sell")
+        else:
+            bids = data.get("bids") or data.get("buy")
+            asks = data.get("asks") or data.get("sell")
+
         if not bids or not asks:
             return None
-        bid_levels = [OrderbookLevel(price=Decimal(level[0]), size=Decimal(level[1])) for level in bids]
-        ask_levels = [OrderbookLevel(price=Decimal(level[0]), size=Decimal(level[1])) for level in asks]
-        timestamp = payload.get("timestamp") or payload.get("ts") or datetime.now(timezone.utc).isoformat()
+        def _convert(level: Dict | list | tuple) -> OrderbookLevel:
+            if isinstance(level, (list, tuple)) and len(level) >= 2:
+                price, size = level[0], level[1]
+            elif isinstance(level, dict):
+                price = level.get("price")
+                size = level.get("size") or level.get("quantity")
+            else:
+                raise ValueError("unknown level format")
+            return OrderbookLevel(price=Decimal(str(price)), size=Decimal(str(size)))
+
+        bid_levels = [_convert(level) for level in bids]
+        ask_levels = [_convert(level) for level in asks]
+        timestamp = (
+            data.get("timestamp")
+            or payload.get("timestamp")
+            or payload.get("ts")
+            or data.get("ts")
+            or datetime.now(timezone.utc).isoformat()
+        )
         ts = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00")) if isinstance(timestamp, str) else datetime.now(timezone.utc)
         return OrderbookSnapshot(market=market, bids=bid_levels, asks=ask_levels, timestamp=ts)
 

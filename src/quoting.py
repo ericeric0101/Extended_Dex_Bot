@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from typing import Optional
 
 from .schemas import QuoteDecision
@@ -18,6 +18,7 @@ class MarketQuotingConfig:
     quote_notional_cap: Decimal
     max_order_size: Optional[Decimal] = None
     min_order_size: Decimal = Decimal("0")
+    price_tick: Decimal = Decimal("0.01")
     inventory_sensitivity: Decimal = Decimal("0.1")
 
 
@@ -42,8 +43,8 @@ class QuoteEngine:
             + self._config.alpha * sigma_term
             + self._config.beta * (funding_term / Decimal("3"))
         )
-        bid_price = fair_price * (Decimal("1") - half_spread)
-        ask_price = fair_price * (Decimal("1") + half_spread)
+        bid_price = self._floor_to_tick(fair_price * (Decimal("1") - half_spread))
+        ask_price = self._ceil_to_tick(fair_price * (Decimal("1") + half_spread))
 
         base_size = self._base_size(mid_price)
         skew = inventory * self._config.inventory_sensitivity
@@ -71,8 +72,26 @@ class QuoteEngine:
     def _clip_size(self, size: Decimal) -> Decimal:
         if size <= Decimal("0"):
             return Decimal("0")
-        if size < self._config.min_order_size:
+
+        adjusted = max(size, self._config.min_order_size)
+        if self._config.max_order_size is not None and adjusted > self._config.max_order_size:
+            return self._config.max_order_size
+        return adjusted
+
+    def _floor_to_tick(self, price: Decimal) -> Decimal:
+        if price <= 0:
             return Decimal("0")
-        if self._config.max_order_size is not None:
-            return min(size, self._config.max_order_size)
-        return size
+        step = self._config.price_tick
+        if step <= 0:
+            return price
+        multiples = (price / step).quantize(Decimal("1"), rounding=ROUND_DOWN)
+        return multiples * step
+
+    def _ceil_to_tick(self, price: Decimal) -> Decimal:
+        if price <= 0:
+            return Decimal("0")
+        step = self._config.price_tick
+        if step <= 0:
+            return price
+        multiples = (price / step).quantize(Decimal("1"), rounding=ROUND_UP)
+        return multiples * step

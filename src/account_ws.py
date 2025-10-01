@@ -149,15 +149,18 @@ class AccountStream:
                 subprotocols = target["subprotocols"]
 
                 try:
-                    sanitized_headers = {
-                        "User-Agent": dict(headers).get("User-Agent"),
-                        "X-Api-Key": f"{dict(headers).get('X-Api-Key')[:6]}..." if dict(headers).get("X-Api-Key") else None,
-                        "X-Subaccount-Id": dict(headers).get("X-Subaccount-Id", None),
-                        "Origin": dict(headers).get("Origin"),
-                        "WS_AUTH_MODE": self._ws_auth_mode,
-                        "WS_AUTH_TOKEN?": bool(self._ws_auth_token),
-                    }
-                    print(f"[account_ws] connecting to {url} headers={sanitized_headers} subprotocols={subprotocols}")
+                    if self._debug_ws:
+                        sanitized_headers = {
+                            "User-Agent": dict(headers).get("User-Agent"),
+                            "X-Api-Key": f"{dict(headers).get('X-Api-Key')[:6]}..." if dict(headers).get("X-Api-Key") else None,
+                            "X-Subaccount-Id": dict(headers).get("X-Subaccount-Id", None),
+                            "Origin": dict(headers).get("Origin"),
+                            "WS_AUTH_MODE": self._ws_auth_mode,
+                            "WS_AUTH_TOKEN?": bool(self._ws_auth_token),
+                        }
+                        print(
+                            f"[account_ws] connecting to {url} headers={sanitized_headers} subprotocols={subprotocols}"
+                        )
 
                     async with websockets.connect(
                         url,
@@ -181,22 +184,21 @@ class AccountStream:
                             yield msg
 
                 except InvalidStatusCode as e:
-                    # 具體印出 401 的 headers 幫助定位
-                    print(f"[account_ws] WS handshake failed: HTTP {e.status_code}")
-                    try:
-                        # websockets 12 將 headers 放在 e.headers（多半是 CIMultiDict）
-                        print(f"[account_ws] response headers: {getattr(e, 'headers', None)}")
-                    except Exception:
-                        pass
+                    if self._debug_ws:
+                        try:
+                            headers_dbg = getattr(e, "headers", None)
+                            print(f"[account_ws] HTTP {e.status_code} response headers: {headers_dbg}")
+                        except Exception:
+                            pass
                     if e.status_code == 401:
                         # 401 常見原因提示
-                        print(
-                            "[account_ws] 401 tips: "
-                            "1) 檢查 API Key 是否為該環境(Testnet/Mainnet)與子帳號；"
-                            "2) 嘗試設置 SUBACCOUNT_ID；"
-                            "3) 若文件要求 WS token，請在 .env 設定 WS_AUTH_TOKEN 與 WS_AUTH_MODE=query|subprotocol；"
-                            "4) 若此 host 不通會自動嘗試下一個候選 host。"
-                        )
+                        # print(
+                        #     "[account_ws] 401 tips: "
+                        #     "1) 檢查 API Key 是否為該環境(Testnet/Mainnet)與子帳號；"
+                        #     "2) 嘗試設置 SUBACCOUNT_ID；"
+                        #     "3) 若文件要求 WS token，請在 .env 設定 WS_AUTH_TOKEN 與 WS_AUTH_MODE=query|subprotocol；"
+                        #     "4) 若此 host 不通會自動嘗試下一個候選 host。"
+                        # )
                         # 換下一個候選 URL
                         continue
                     else:
@@ -204,10 +206,11 @@ class AccountStream:
                         continue
 
                 except (OSError, ConnectionClosed) as e:
-                    print(f"[account_ws] disconnect: {e} (host={ws_base_url}); will rotate/Retry after {backoff:.1f}s")
+                    # print(f"[account_ws] disconnect: {e} (host={ws_base_url}); will rotate/Retry after {backoff:.1f}s")
                     # 換下一個候選 URL
                     continue
 
             # 所有候選都失敗：整體退避
             await asyncio.sleep(backoff)
             backoff = min(backoff * 2, 8.0)
+        self._debug_ws = os.getenv("EXTENDED_DEBUG_ACCOUNT_WS", "0") == "1"

@@ -43,6 +43,7 @@ class MarketConfig(BaseModel):
     quote_notional_cap_usd: float = 50.0
     replace_threshold_bps: float = 2.0
     min_order_size: float = 0.001
+    price_tick: float = 0.01
     post_only: bool = True
     enabled: bool = True
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Dict, Protocol
+from typing import Dict, Optional, Protocol
 
 from x10.perpetual.accounts import StarkPerpetualAccount
 from x10.perpetual.configuration import MAINNET_CONFIG, TESTNET_CONFIG
@@ -12,6 +12,7 @@ from x10.perpetual.orders import OrderSide, SelfTradeProtectionLevel, TimeInForc
 from x10.perpetual.trading_client import PerpetualTradingClient
 
 from .config import RuntimeSettings
+from .risk import RiskManager
 from .schemas import QuoteDecision
 
 
@@ -106,6 +107,7 @@ class ExecutionEngine:
         replace_threshold_bps: Decimal,
         post_only: bool = True,
         stp_level: SelfTradeProtectionLevel = SelfTradeProtectionLevel.ACCOUNT,
+        risk_manager: Optional[RiskManager] = None,
     ) -> None:
         self._market = market
         self._client = trading_client
@@ -114,6 +116,7 @@ class ExecutionEngine:
         self._threshold = replace_threshold_bps / Decimal("10000")
         self._orders: Dict[OrderSide, LiveOrder] = {}
         self._lock = asyncio.Lock()
+        self._risk_manager = risk_manager
 
     async def process_quote(self, decision: QuoteDecision) -> None:
         async with self._lock:
@@ -158,7 +161,11 @@ class ExecutionEngine:
         if order_id is None:
             return
         self._orders[side] = LiveOrder(order_id=order_id, price=price, size=size, side=side)
+        if self._risk_manager:
+            self._risk_manager.register_order()
 
     async def _cancel(self, live: LiveOrder) -> None:
         await self._client.cancel_order(order_id=live.order_id)
         self._orders.pop(live.side, None)
+        if self._risk_manager:
+            self._risk_manager.register_cancel()
