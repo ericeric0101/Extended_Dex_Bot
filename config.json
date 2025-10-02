@@ -1,8 +1,8 @@
 {
   "stp": "ACCOUNT",
-  "quote_loop_ms": 1000,
+  "quote_loop_ms": 500,
   "replace_coalesce_ms": 400,
-  "dead_man_switch_sec": 120,
+  "dead_man_switch_sec": 60,
   "risk": {
     "max_net_position_usd": 100,
     "max_open_orders": 20,
@@ -24,10 +24,10 @@
     {
       "name": "ETH-USD",
       "leverage": 5,
-      "K": 0.0005,
-      "alpha": 0.5,
+      "K": 0.0003,
+      "alpha": 0.4,
       "beta": 0.25,
-      "base_spread": 0.001,
+      "base_spread": 0.0005,
       "quote_notional_cap_usd": 70,
       "replace_threshold_bps": 2,
       "min_order_size": 0.011,

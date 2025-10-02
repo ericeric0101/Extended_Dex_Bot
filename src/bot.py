@@ -9,10 +9,11 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List
 
+import httpx
 from x10.perpetual.orders import SelfTradeProtectionLevel
 
 from .account_ws import AccountStream
-from .config import BotConfig, MarketConfig, get_endpoints, get_settings, load_bot_config
+from .config import BotConfig, EndpointConfig, MarketConfig, RuntimeSettings, get_endpoints, get_settings, load_bot_config
 from .executor import ExecutionEngine, build_trading_client
 from .logging_setup import setup_logging
 from .md_source import MarketDataSource
@@ -59,7 +60,7 @@ async def quote_loop(
 
         state.mid_price = mid
 
-        max_net_units = Decimal("0") if max_net_usd <= 0 else max_net_units / mid
+        max_net_units = Decimal("0") if max_net_usd <= 0 else max_net_usd / mid
         max_order_units = Decimal("0") if cap_usd <= 0 else cap_usd / mid
 
         if max_order_units <= Decimal("0"):
@@ -228,20 +229,31 @@ def _build_risk_manager(bot_cfg: BotConfig) -> RiskManager:
     return RiskManager(config=risk_config)
 
 
-async def _arm_dead_man_switch(bot_cfg: BotConfig, settings, endpoints) -> None:
+async def _arm_dead_man_switch(bot_cfg: BotConfig, settings: RuntimeSettings, endpoints: EndpointConfig) -> None:
     if bot_cfg.dead_man_switch_sec <= 0:
         return
-    rest_client = RestClient(settings, endpoints)
+
+    headers = {"User-Agent": settings.user_agent}
+    if settings.api_key:
+        headers["X-Api-Key"] = settings.api_key
+
+    url = f"{str(endpoints.rest_base).rstrip('/')}/user/deadmanswitch"
+    params = {"countdownTime": bot_cfg.dead_man_switch_sec}
+
     try:
-        await rest_client.post(
-            "/user/deadmanswitch",
-            params={"countdownTime": bot_cfg.dead_man_switch_sec},
-        )
-        logging.info(f"Dead man's switch armed for {bot_cfg.dead_man_switch_sec} seconds.")
-    except Exception as exc:  # pragma: no cover - network dependent
+        async with httpx.AsyncClient(headers=headers) as client:
+            response = await client.post(url, params=params)
+            response.raise_for_status()
+
+        if response.status_code == 200:
+            logging.info(f"Dead man's switch armed for {bot_cfg.dead_man_switch_sec} seconds.")
+        else:
+            logging.error(
+                f"Failed to arm dead man's switch. Status: {response.status_code}, Response: {response.text}"
+            )
+
+    except Exception as exc:
         logging.error(f"Failed to arm dead man's switch: {exc}")
-    finally:
-        await rest_client.aclose()
 
 
 async def _hydrate_market_trading_rules(bot_cfg: BotConfig, settings, endpoints) -> None:

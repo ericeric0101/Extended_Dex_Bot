@@ -1,0 +1,161 @@
+2025-10-02 16:48:58 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 16:48:58 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 16:48:59 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 16:48:59 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 16:49:00 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=120 "HTTP/1.1 200 OK"
+2025-10-02 16:49:00 - root - INFO - --- Checking Account Info ---
+2025-10-02 16:49:01 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.670887",
+        "equity": "67.670887",
+        "available_for_trade": "67.670887",
+        "available_for_withdrawal": "67.670887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759411942806
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 16:49:01 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 16:49:01 - root - INFO - --- Account Info OK ---
+2025-10-02 16:49:01 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 16:49:01 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 16:49:02 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 16:49:02 - root - INFO - [ETH-USD] Received snapshot #0, new mid_price: 4382.15
+2025-10-02 16:49:02 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 16:49:02 - root - INFO - [account_ws] connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account with headers={'User-Agent': 'extended-mm-bot/0.1', 'X-Api-Key': '76ff5c...', 'X-Subaccount-Id': None, 'Origin': 'https://app.extended.exchange', 'WS_AUTH_MODE': 'query', 'WS_AUTH_TOKEN?': False} and subprotocols=[]
+2025-10-02 16:49:03 - root - INFO - [ETH-USD] Received snapshot #100, new mid_price: 4381.6
+2025-10-02 16:49:03 - root - INFO - [ETH-USD] Received snapshot #200, new mid_price: 4387.35
+2025-10-02 16:51:02 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 16:51:02 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 16:51:02 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 16:51:02 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 16:51:03 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=120 "HTTP/1.1 200 OK"
+2025-10-02 16:51:03 - root - INFO - --- Checking Account Info ---
+2025-10-02 16:51:05 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.670887",
+        "equity": "67.670887",
+        "available_for_trade": "67.670887",
+        "available_for_withdrawal": "67.670887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759411942806
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 16:51:05 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 16:51:05 - root - INFO - --- Account Info OK ---
+2025-10-02 16:51:05 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 16:51:05 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 16:51:06 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 16:51:06 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 16:51:06 - root - INFO - [account_ws] connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account with headers={'User-Agent': 'extended-mm-bot/0.1', 'X-Api-Key': '76ff5c...', 'X-Subaccount-Id': None, 'Origin': 'https://app.extended.exchange', 'WS_AUTH_MODE': 'query', 'WS_AUTH_TOKEN?': False} and subprotocols=[]
+2025-10-02 16:51:06 - root - INFO - [ETH-USD] Received snapshot #0, new mid_price: 4385.55
+2025-10-02 16:51:06 - root - INFO - [ETH-USD] Received snapshot #100, new mid_price: 4378.05
+2025-10-02 16:51:07 - root - INFO - [ETH-USD] Received snapshot #200, new mid_price: 4372.05
+2025-10-02 16:51:07 - root - INFO - [ETH-USD] Received snapshot #300, new mid_price: 4371.15
+2025-10-02 16:51:07 - root - INFO - [account_ws] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account
+2025-10-02 16:51:10 - root - INFO - [ETH-USD] Received snapshot #400, new mid_price: 4372.45
+2025-10-02 16:51:26 - root - INFO - [ETH-USD] Received snapshot #500, new mid_price: 4373.85
+2025-10-02 16:51:42 - root - INFO - [ETH-USD] Received snapshot #600, new mid_price: 4376.45
+2025-10-02 16:51:57 - root - INFO - [ETH-USD] Received snapshot #700, new mid_price: 4378.3
+2025-10-02 16:52:18 - root - INFO - [ETH-USD] Received snapshot #800, new mid_price: 4380.1
+2025-10-02 16:52:38 - root - INFO - [ETH-USD] Received snapshot #900, new mid_price: 4376.3
+2025-10-02 16:53:01 - root - INFO - [ETH-USD] Received snapshot #1000, new mid_price: 4379.35
+2025-10-02 16:53:23 - root - INFO - [ETH-USD] Received snapshot #1100, new mid_price: 4385.45
+2025-10-02 16:53:43 - root - INFO - [ETH-USD] Received snapshot #1200, new mid_price: 4383.95
+2025-10-02 16:54:05 - root - INFO - [ETH-USD] Received snapshot #1300, new mid_price: 4391.3
+2025-10-02 16:54:26 - root - INFO - [ETH-USD] Received snapshot #1400, new mid_price: 4383.0
+2025-10-02 16:54:54 - root - INFO - [ETH-USD] Received snapshot #1500, new mid_price: 4383.6
+2025-10-02 16:55:14 - root - INFO - Shutdown requested by user.
+2025-10-02 17:10:08 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 17:10:08 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 17:10:09 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 17:10:09 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 17:10:10 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=120 "HTTP/1.1 200 OK"
+2025-10-02 17:10:10 - root - INFO - --- Checking Account Info ---
+2025-10-02 17:10:11 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.670887",
+        "equity": "67.670887",
+        "available_for_trade": "67.670887",
+        "available_for_withdrawal": "67.670887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759416967620
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:10:11 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:10:11 - root - INFO - --- Account Info OK ---
+2025-10-02 17:10:11 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 17:10:11 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:10:12 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 17:10:12 - root - INFO - [account_ws] connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account with headers={'User-Agent': 'extended-mm-bot/0.1', 'X-Api-Key': '76ff5c...', 'X-Subaccount-Id': None, 'Origin': 'https://app.extended.exchange', 'WS_AUTH_MODE': 'query', 'WS_AUTH_TOKEN?': False} and subprotocols=[]
+2025-10-02 17:10:12 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:10:30 - root - INFO - Shutdown requested by user.
+2025-10-02 17:13:34 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 17:13:34 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 17:13:34 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 17:13:34 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 17:13:35 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=120 "HTTP/1.1 200 OK"
+2025-10-02 17:13:35 - root - INFO - Dead man's switch armed for 120 seconds.
+2025-10-02 17:13:35 - root - INFO - --- Checking Account Info ---
+2025-10-02 17:13:36 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.670887",
+        "equity": "67.670887",
+        "available_for_trade": "67.670887",
+        "available_for_withdrawal": "67.670887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759416967620
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:13:36 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:13:36 - root - INFO - --- Account Info OK ---
+2025-10-02 17:13:36 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 17:13:36 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:13:37 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:13:37 - root - INFO - [ETH-USD] Received snapshot #0, new mid_price: 4384.95
+2025-10-02 17:13:37 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 17:13:37 - root - INFO - [account_ws] connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account with headers={'User-Agent': 'extended-mm-bot/0.1', 'X-Api-Key': '76ff5c...', 'X-Subaccount-Id': None, 'Origin': 'https://app.extended.exchange', 'WS_AUTH_MODE': 'query', 'WS_AUTH_TOKEN?': False} and subprotocols=[]
+2025-10-02 17:13:38 - root - INFO - Shutdown requested by user.

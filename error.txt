@@ -1,0 +1,33 @@
+2025-10-02 16:49:00 - root - ERROR - Failed to arm dead man's switch: Expecting value: line 1 column 1 (char 0)
+2025-10-02 16:49:04 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x107a5bec0>
+2025-10-02 16:49:04 - asyncio - ERROR - Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x1079fe750>, 1243235.471854291)])']
+connector: <aiohttp.connector.TCPConnector object at 0x107a5bef0>
+2025-10-02 16:51:03 - root - ERROR - Failed to arm dead man's switch: Expecting value: line 1 column 1 (char 0)
+2025-10-02 16:55:14 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x111c9be60>
+2025-10-02 16:55:14 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x111cc7830>
+2025-10-02 16:55:14 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x11113caa0>
+2025-10-02 16:55:14 - asyncio - ERROR - Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x111c76990>, 1243597.192355958), (<aiohttp.client_proto.ResponseHandler object at 0x111c766f0>, 1243597.194129583)])']
+connector: <aiohttp.connector.TCPConnector object at 0x111cc65d0>
+2025-10-02 17:10:10 - root - ERROR - Failed to arm dead man's switch. Status: 200, Response: 
+2025-10-02 17:10:30 - asyncio - ERROR - Task was destroyed but it is pending!
+task: <Task cancelling name='Task-14' coro=<WebSocketCommonProtocol.close_connection() done, defined at /Users/cheng-kaihuang/Extended_Dex_Bot/.venv/lib/python3.12/site-packages/websockets/legacy/protocol.py:1285> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at /opt/anaconda3/lib/python3.12/asyncio/tasks.py:922, Task.task_wakeup()]> cb=[gather.<locals>._done_callback() at /opt/anaconda3/lib/python3.12/asyncio/tasks.py:767, shield.<locals>._inner_done_callback() at /opt/anaconda3/lib/python3.12/asyncio/tasks.py:905]>
+2025-10-02 17:10:30 - asyncio - ERROR - Task was destroyed but it is pending!
+task: <Task cancelling name='Task-8' coro=<_orderbook_consumer() running at /Users/cheng-kaihuang/Extended_Dex_Bot/src/bot.py:201> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at /opt/anaconda3/lib/python3.12/asyncio/tasks.py:922, Task.task_wakeup()]> cb=[gather.<locals>._done_callback() at /opt/anaconda3/lib/python3.12/asyncio/tasks.py:767, gather.<locals>._done_callback() at /opt/anaconda3/lib/python3.12/asyncio/tasks.py:767]>
+2025-10-02 17:10:30 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x107603c80>
+2025-10-02 17:10:30 - asyncio - ERROR - Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x1075af4d0>, 1244505.024454833)])']
+connector: <aiohttp.connector.TCPConnector object at 0x107603c20>
+2025-10-02 17:13:38 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x10396ed80>
+2025-10-02 17:13:38 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x103281220>
+2025-10-02 17:13:38 - asyncio - ERROR - Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x1038eb4d0>, 1244710.180664416)])']
+connector: <aiohttp.connector.TCPConnector object at 0x1037b7350>
