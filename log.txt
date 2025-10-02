@@ -159,3 +159,319 @@
 2025-10-02 17:13:37 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
 2025-10-02 17:13:37 - root - INFO - [account_ws] connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account with headers={'User-Agent': 'extended-mm-bot/0.1', 'X-Api-Key': '76ff5c...', 'X-Subaccount-Id': None, 'Origin': 'https://app.extended.exchange', 'WS_AUTH_MODE': 'query', 'WS_AUTH_TOKEN?': False} and subprotocols=[]
 2025-10-02 17:13:38 - root - INFO - Shutdown requested by user.
+2025-10-02 17:14:58 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 17:14:58 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 17:14:58 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 17:14:58 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 17:14:59 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=60 "HTTP/1.1 200 OK"
+2025-10-02 17:14:59 - root - INFO - Dead man's switch armed for 60 seconds.
+2025-10-02 17:14:59 - root - INFO - --- Checking Account Info ---
+2025-10-02 17:15:00 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.670887",
+        "equity": "67.670887",
+        "available_for_trade": "67.670887",
+        "available_for_withdrawal": "67.670887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759416967620
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:15:01 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:15:01 - root - INFO - --- Account Info OK ---
+2025-10-02 17:15:01 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 17:15:01 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:15:02 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 17:15:02 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:15:02 - root - INFO - [account_ws] connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account with headers={'User-Agent': 'extended-mm-bot/0.1', 'X-Api-Key': '76ff5c...', 'X-Subaccount-Id': None, 'Origin': 'https://app.extended.exchange', 'WS_AUTH_MODE': 'query', 'WS_AUTH_TOKEN?': False} and subprotocols=[]
+2025-10-02 17:15:02 - root - INFO - [ETH-USD] Received snapshot #0, new mid_price: 4393.15
+2025-10-02 17:15:02 - root - INFO - [ETH-USD] Received snapshot #100, new mid_price: 4394.65
+2025-10-02 17:15:02 - root - INFO - [ETH-USD] Received snapshot #200, new mid_price: 4395.35
+2025-10-02 17:15:03 - root - INFO - [account_ws] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account
+2025-10-02 17:15:13 - root - INFO - [ETH-USD] Received snapshot #300, new mid_price: 4392.9
+2025-10-02 17:15:33 - root - INFO - [ETH-USD] Received snapshot #400, new mid_price: 4391.75
+2025-10-02 17:15:50 - root - INFO - [ETH-USD] Received snapshot #500, new mid_price: 4395.35
+2025-10-02 17:16:07 - root - INFO - [ETH-USD] Received snapshot #600, new mid_price: 4387.9
+2025-10-02 17:16:23 - root - INFO - [ETH-USD] Received snapshot #700, new mid_price: 4396.65
+2025-10-02 17:16:39 - root - INFO - [ETH-USD] Received snapshot #800, new mid_price: 4398.95
+2025-10-02 17:16:58 - root - INFO - [ETH-USD] Received snapshot #900, new mid_price: 4399.15
+2025-10-02 17:17:12 - root - INFO - [ETH-USD] Received snapshot #1000, new mid_price: 4402.35
+2025-10-02 17:17:27 - root - INFO - [ETH-USD] Received snapshot #1100, new mid_price: 4400.15
+2025-10-02 17:17:45 - root - INFO - [ETH-USD] Received snapshot #1200, new mid_price: 4397.05
+2025-10-02 17:18:07 - root - INFO - [ETH-USD] Received snapshot #1300, new mid_price: 4398.85
+2025-10-02 17:18:29 - root - INFO - [ETH-USD] Received snapshot #1400, new mid_price: 4399.2
+2025-10-02 17:18:53 - root - INFO - [ETH-USD] Received snapshot #1500, new mid_price: 4397.85
+2025-10-02 17:19:17 - root - INFO - [ETH-USD] Received snapshot #1600, new mid_price: 4398.25
+2025-10-02 17:19:40 - root - INFO - [ETH-USD] Received snapshot #1700, new mid_price: 4398.05
+2025-10-02 17:19:59 - root - INFO - [ETH-USD] Received snapshot #1800, new mid_price: 4396
+2025-10-02 17:20:15 - root - INFO - [ETH-USD] Received snapshot #1900, new mid_price: 4393.95
+2025-10-02 17:20:30 - root - INFO - [ETH-USD] Received snapshot #2000, new mid_price: 4394.1
+2025-10-02 17:20:46 - root - INFO - [ETH-USD] Received snapshot #2100, new mid_price: 4394.95
+2025-10-02 17:21:08 - root - INFO - [ETH-USD] Received snapshot #2200, new mid_price: 4396.6
+2025-10-02 17:21:26 - root - INFO - [ETH-USD] Received snapshot #2300, new mid_price: 4395.45
+2025-10-02 17:21:50 - root - INFO - [ETH-USD] Received snapshot #2400, new mid_price: 4395.95
+2025-10-02 17:22:07 - root - INFO - [ETH-USD] Received snapshot #2500, new mid_price: 4393.85
+2025-10-02 17:22:26 - root - INFO - [ETH-USD] Received snapshot #2600, new mid_price: 4396.2
+2025-10-02 17:22:46 - root - INFO - [ETH-USD] Received snapshot #2700, new mid_price: 4403.2
+2025-10-02 17:23:01 - root - INFO - [ETH-USD] Received snapshot #2800, new mid_price: 4410.0
+2025-10-02 17:23:13 - root - INFO - [ETH-USD] Received snapshot #2900, new mid_price: 4413.05
+2025-10-02 17:23:25 - root - INFO - [ETH-USD] Received snapshot #3000, new mid_price: 4411.85
+2025-10-02 17:23:41 - root - INFO - [ETH-USD] Received snapshot #3100, new mid_price: 4415.75
+2025-10-02 17:23:58 - root - INFO - [ETH-USD] Received snapshot #3200, new mid_price: 4415.85
+2025-10-02 17:24:15 - root - INFO - [ETH-USD] Received snapshot #3300, new mid_price: 4416.5
+2025-10-02 17:24:30 - root - INFO - [ETH-USD] Received snapshot #3400, new mid_price: 4412.5
+2025-10-02 17:24:49 - root - INFO - [ETH-USD] Received snapshot #3500, new mid_price: 4420.05
+2025-10-02 17:25:01 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 17:25:03 - root - INFO - [ETH-USD] Received snapshot #3600, new mid_price: 4415.5
+2025-10-02 17:25:23 - root - INFO - [ETH-USD] Received snapshot #3700, new mid_price: 4418.95
+2025-10-02 17:25:40 - root - INFO - [ETH-USD] Received snapshot #3800, new mid_price: 4412.75
+2025-10-02 17:26:02 - root - INFO - [ETH-USD] Received snapshot #3900, new mid_price: 4416.35
+2025-10-02 17:26:17 - root - INFO - [ETH-USD] Received snapshot #4000, new mid_price: 4414.35
+2025-10-02 17:26:30 - root - INFO - [ETH-USD] Received snapshot #4100, new mid_price: 4346.9
+2025-10-02 17:26:47 - root - INFO - [ETH-USD] Received snapshot #4200, new mid_price: 4412.35
+2025-10-02 17:27:06 - root - INFO - [ETH-USD] Received snapshot #4300, new mid_price: 4413.85
+2025-10-02 17:27:36 - root - INFO - [ETH-USD] Received snapshot #4400, new mid_price: 4441.8
+2025-10-02 17:28:08 - root - INFO - [ETH-USD] Received snapshot #4500, new mid_price: 4413.95
+2025-10-02 17:28:30 - root - INFO - [ETH-USD] Received snapshot #4600, new mid_price: 4410.35
+2025-10-02 17:28:56 - root - INFO - [ETH-USD] Received snapshot #4700, new mid_price: 4414.55
+2025-10-02 17:29:18 - root - INFO - [ETH-USD] Received snapshot #4800, new mid_price: 4407.8
+2025-10-02 17:29:43 - root - INFO - [ETH-USD] Received snapshot #4900, new mid_price: 4406.85
+2025-10-02 17:30:03 - root - INFO - [ETH-USD] Received snapshot #5000, new mid_price: 4407.9
+2025-10-02 17:30:24 - root - INFO - [ETH-USD] Received snapshot #5100, new mid_price: 4408.1
+2025-10-02 17:30:39 - root - INFO - [ETH-USD] Received snapshot #5200, new mid_price: 4405.6
+2025-10-02 17:30:57 - root - INFO - [ETH-USD] Received snapshot #5300, new mid_price: 4406.5
+2025-10-02 17:31:14 - root - INFO - [ETH-USD] Received snapshot #5400, new mid_price: 4406.95
+2025-10-02 17:31:37 - root - INFO - [ETH-USD] Received snapshot #5500, new mid_price: 4402.25
+2025-10-02 17:32:05 - root - INFO - [ETH-USD] Received snapshot #5600, new mid_price: 4404.7
+2025-10-02 17:32:23 - root - INFO - [ETH-USD] Received snapshot #5700, new mid_price: 4403.55
+2025-10-02 17:32:44 - root - INFO - [ETH-USD] Received snapshot #5800, new mid_price: 4404.25
+2025-10-02 17:33:05 - root - INFO - [ETH-USD] Received snapshot #5900, new mid_price: 4407.55
+2025-10-02 17:33:16 - root - INFO - Shutdown requested by user.
+2025-10-02 17:33:40 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 17:33:40 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 17:33:40 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 17:33:40 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 17:33:41 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=60 "HTTP/1.1 200 OK"
+2025-10-02 17:33:41 - root - INFO - Dead man's switch armed for 60 seconds.
+2025-10-02 17:33:41 - root - INFO - --- Checking Account Info ---
+2025-10-02 17:33:42 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.670887",
+        "equity": "67.670887",
+        "available_for_trade": "67.670887",
+        "available_for_withdrawal": "67.670887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759419205880
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:33:43 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:33:43 - root - INFO - --- Account Info OK ---
+2025-10-02 17:33:43 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 17:33:43 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:33:44 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 17:33:44 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:33:44 - root - INFO - [ETH-USD] Received snapshot #0, new mid_price: 4404.85
+2025-10-02 17:33:45 - root - INFO - [account_ws] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account
+2025-10-02 17:33:46 - root - INFO - [ETH-USD] Received snapshot #100, new mid_price: 4405.45
+2025-10-02 17:34:06 - root - INFO - [ETH-USD] Received snapshot #200, new mid_price: 4405.85
+2025-10-02 17:34:30 - root - INFO - [ETH-USD] Received snapshot #300, new mid_price: 4407.85
+2025-10-02 17:34:49 - root - INFO - [ETH-USD] Received snapshot #400, new mid_price: 4405.55
+2025-10-02 17:35:07 - root - INFO - [ETH-USD] Received snapshot #500, new mid_price: 4407.75
+2025-10-02 17:35:30 - root - INFO - [ETH-USD] Received snapshot #600, new mid_price: 4404.3
+2025-10-02 17:35:52 - root - INFO - [ETH-USD] Received snapshot #700, new mid_price: 4404.3
+2025-10-02 17:36:14 - root - INFO - [ETH-USD] Received snapshot #800, new mid_price: 4408.25
+2025-10-02 17:36:37 - root - INFO - [ETH-USD] Received snapshot #900, new mid_price: 4404.85
+2025-10-02 17:36:55 - root - INFO - [ETH-USD] Received snapshot #1000, new mid_price: 4403.85
+2025-10-02 17:37:17 - root - INFO - [ETH-USD] Received snapshot #1100, new mid_price: 4397.55
+2025-10-02 17:37:32 - root - INFO - [ETH-USD] Received snapshot #1200, new mid_price: 4397.75
+2025-10-02 17:37:47 - root - INFO - [ETH-USD] Received snapshot #1300, new mid_price: 4396.25
+2025-10-02 17:38:03 - root - INFO - [ETH-USD] Received snapshot #1400, new mid_price: 4397.65
+2025-10-02 17:38:18 - root - INFO - [ETH-USD] Received snapshot #1500, new mid_price: 4396.85
+2025-10-02 17:38:36 - root - INFO - [ETH-USD] Received snapshot #1600, new mid_price: 4398.25
+2025-10-02 17:39:07 - root - INFO - [ETH-USD] Received snapshot #1700, new mid_price: 4403.9
+2025-10-02 17:39:22 - root - INFO - Shutdown requested by user.
+2025-10-02 17:42:10 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 17:42:10 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 17:42:11 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 17:42:11 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 17:42:12 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=60 "HTTP/1.1 200 OK"
+2025-10-02 17:42:12 - root - INFO - Dead man's switch armed for 60 seconds.
+2025-10-02 17:42:12 - root - INFO - --- Checking Account Info ---
+2025-10-02 17:42:13 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.670887",
+        "equity": "67.670887",
+        "available_for_trade": "67.670887",
+        "available_for_withdrawal": "67.670887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759419552006
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:42:13 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:42:13 - root - INFO - --- Account Info OK ---
+2025-10-02 17:42:13 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 17:42:13 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:42:14 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:42:14 - root - INFO - [ETH-USD] Received snapshot #0, new mid_price: 4410.75
+2025-10-02 17:42:14 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 17:42:15 - root - INFO - [ETH-USD] Received snapshot #100, new mid_price: 4415.4
+2025-10-02 17:42:15 - root - INFO - [account_ws] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account
+2025-10-02 17:42:16 - root - INFO - [ETH-USD] Received snapshot #200, new mid_price: 4414.05
+2025-10-02 17:42:27 - root - INFO - [ETH-USD] Received snapshot #300, new mid_price: 4416.05
+2025-10-02 17:42:51 - root - INFO - [ETH-USD] Received snapshot #400, new mid_price: 4348.15
+2025-10-02 17:43:01 - root - INFO - Shutdown requested by user.
+2025-10-02 17:43:34 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 17:43:34 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 17:43:35 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 17:43:35 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 17:43:36 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=60 "HTTP/1.1 200 OK"
+2025-10-02 17:43:36 - root - INFO - Dead man's switch armed for 60 seconds.
+2025-10-02 17:43:36 - root - INFO - --- Checking Account Info ---
+2025-10-02 17:43:37 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.670887",
+        "equity": "67.670887",
+        "available_for_trade": "67.670887",
+        "available_for_withdrawal": "67.670887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759419792322
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:43:37 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:43:37 - root - INFO - --- Account Info OK ---
+2025-10-02 17:43:37 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 17:43:37 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:43:38 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 17:43:38 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:43:38 - root - INFO - [ETH-USD] Received snapshot #0, new mid_price: 4414.35
+2025-10-02 17:43:39 - root - INFO - [account_ws] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account
+2025-10-02 17:43:46 - root - INFO - [ETH-USD] Received snapshot #100, new mid_price: 4411.05
+2025-10-02 17:44:11 - root - INFO - [ETH-USD] Received snapshot #200, new mid_price: 4411.7
+2025-10-02 17:44:33 - root - INFO - [ETH-USD] Received snapshot #300, new mid_price: 4411.45
+2025-10-02 17:45:06 - root - INFO - [ETH-USD] Received snapshot #400, new mid_price: 4412.05
+2025-10-02 17:45:32 - root - INFO - [ETH-USD] Received snapshot #500, new mid_price: 4413.35
+2025-10-02 17:45:43 - root - INFO - Shutdown requested by user.
+2025-10-02 17:56:29 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=BTC-USD "HTTP/1.1 200 OK"
+2025-10-02 17:56:29 - root - INFO - Hydrated market rules for BTC-USD: min_order_size=0.0001, price_tick=1.0
+2025-10-02 17:56:29 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/info/markets?market=ETH-USD "HTTP/1.1 200 OK"
+2025-10-02 17:56:29 - root - INFO - Hydrated market rules for ETH-USD: min_order_size=0.01, price_tick=0.1
+2025-10-02 17:56:31 - httpx - INFO - HTTP Request: POST https://api.starknet.extended.exchange/api/v1/user/deadmanswitch?countdownTime=60 "HTTP/1.1 200 OK"
+2025-10-02 17:56:31 - root - INFO - Dead man's switch armed for 60 seconds.
+2025-10-02 17:56:31 - root - INFO - --- Checking Account Info ---
+2025-10-02 17:56:32 - root - INFO - Balance: {
+    "status": "OK",
+    "data": {
+        "collateral_name": "USD",
+        "balance": "67.638887",
+        "equity": "67.638887",
+        "available_for_trade": "67.638887",
+        "available_for_withdrawal": "67.638887",
+        "unrealised_pnl": "0.000000",
+        "initial_margin": "0.000000",
+        "margin_ratio": "0",
+        "updated_time": 1759420046876
+    },
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:56:32 - root - INFO - Positions: {
+    "status": "OK",
+    "data": [],
+    "error": null,
+    "pagination": null
+}
+2025-10-02 17:56:32 - root - INFO - --- Account Info OK ---
+2025-10-02 17:56:32 - root - INFO - PnL Snapshot: {"spread_pnl": "0", "inventory_pnl": "0", "fees": "0", "funding": "0", "net_pnl": "0"}
+2025-10-02 17:56:32 - root - INFO - [md_source] Connecting to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:56:33 - root - INFO - [md_source] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/orderbooks/ETH-USD
+2025-10-02 17:56:33 - httpx - INFO - HTTP Request: GET https://api.starknet.extended.exchange/api/v1/user/fees "HTTP/1.1 200 OK"
+2025-10-02 17:56:33 - root - INFO - [ETH-USD] Received snapshot #0, new mid_price: 4434.55
+2025-10-02 17:56:34 - root - INFO - [account_ws] Connection successful to wss://api.starknet.extended.exchange/stream.extended.exchange/v1/account
+2025-10-02 17:56:40 - root - INFO - [ETH-USD] Received snapshot #100, new mid_price: 4431.65
+2025-10-02 17:57:00 - root - INFO - [ETH-USD] Received snapshot #200, new mid_price: 4435.2
+2025-10-02 17:57:17 - root - INFO - [ETH-USD] Received snapshot #300, new mid_price: 4438.55
+2025-10-02 17:57:38 - root - INFO - [ETH-USD] Received snapshot #400, new mid_price: 4440.35
+2025-10-02 17:58:14 - root - INFO - [ETH-USD] Received snapshot #500, new mid_price: 4437.8
+2025-10-02 17:58:45 - root - INFO - [ETH-USD] Received snapshot #600, new mid_price: 4440.7
+2025-10-02 17:59:13 - root - INFO - [ETH-USD] Received snapshot #700, new mid_price: 4443.85
+2025-10-02 17:59:40 - root - INFO - [ETH-USD] Received snapshot #800, new mid_price: 4440.45
+2025-10-02 18:00:10 - root - INFO - [ETH-USD] Received snapshot #900, new mid_price: 4438.45
+2025-10-02 18:00:39 - root - INFO - [ETH-USD] Received snapshot #1000, new mid_price: 4503.65
+2025-10-02 18:01:02 - root - INFO - [ETH-USD] Received snapshot #1100, new mid_price: 4438.5
+2025-10-02 18:01:29 - root - INFO - [ETH-USD] Received snapshot #1200, new mid_price: 4438.35
+2025-10-02 18:02:03 - root - INFO - [ETH-USD] Received snapshot #1300, new mid_price: 4442.15
+2025-10-02 18:02:32 - root - INFO - [ETH-USD] Received snapshot #1400, new mid_price: 4444.45
+2025-10-02 18:02:55 - root - INFO - [ETH-USD] Received snapshot #1500, new mid_price: 4441.25
+2025-10-02 18:03:19 - root - INFO - [ETH-USD] Received snapshot #1600, new mid_price: 4442.95
+2025-10-02 18:03:36 - root - INFO - [ETH-USD] Received snapshot #1700, new mid_price: 4450.7
+2025-10-02 18:03:48 - root - INFO - [ETH-USD] Received snapshot #1800, new mid_price: 4452.25
+2025-10-02 18:04:04 - root - INFO - [ETH-USD] Received snapshot #1900, new mid_price: 4454.15
+2025-10-02 18:04:21 - root - INFO - [ETH-USD] Received snapshot #2000, new mid_price: 4452.9
+2025-10-02 18:04:36 - root - INFO - [ETH-USD] Received snapshot #2100, new mid_price: 4444.95
+2025-10-02 18:04:51 - root - INFO - [ETH-USD] Received snapshot #2200, new mid_price: 4443.2
+2025-10-02 18:05:11 - root - INFO - [ETH-USD] Received snapshot #2300, new mid_price: 4440.9
+2025-10-02 18:05:30 - root - INFO - [ETH-USD] Received snapshot #2400, new mid_price: 4438.8
+2025-10-02 18:05:48 - root - INFO - [ETH-USD] Received snapshot #2500, new mid_price: 4440.85
+2025-10-02 18:06:06 - root - INFO - [ETH-USD] Received snapshot #2600, new mid_price: 4444.05
+2025-10-02 18:06:27 - root - INFO - [ETH-USD] Received snapshot #2700, new mid_price: 4449.7
+2025-10-02 18:06:32 - root - INFO - PnL Snapshot: {"spread_pnl": "-0.012", "inventory_pnl": "-0.152767760", "fees": "-0.019999", "funding": "0", "net_pnl": "-0.184766760"}
+2025-10-02 18:06:47 - root - INFO - [ETH-USD] Received snapshot #2800, new mid_price: 4454.8
+2025-10-02 18:07:02 - root - INFO - [ETH-USD] Received snapshot #2900, new mid_price: 4453.45
+2025-10-02 18:07:21 - root - INFO - [ETH-USD] Received snapshot #3000, new mid_price: 4387.3
+2025-10-02 18:07:44 - root - INFO - [ETH-USD] Received snapshot #3100, new mid_price: 4452.5
+2025-10-02 18:08:08 - root - INFO - [ETH-USD] Received snapshot #3200, new mid_price: 4450.95
+2025-10-02 18:08:32 - root - INFO - [ETH-USD] Received snapshot #3300, new mid_price: 4449.8
+2025-10-02 18:08:59 - root - INFO - [ETH-USD] Received snapshot #3400, new mid_price: 4450.35
+2025-10-02 18:09:25 - root - INFO - [ETH-USD] Received snapshot #3500, new mid_price: 4446.85
+2025-10-02 18:09:49 - root - INFO - [ETH-USD] Received snapshot #3600, new mid_price: 4449.2
+2025-10-02 18:10:14 - root - INFO - [ETH-USD] Received snapshot #3700, new mid_price: 4451.05
+2025-10-02 18:10:43 - root - INFO - [ETH-USD] Received snapshot #3800, new mid_price: 4450.2
+2025-10-02 18:11:06 - root - INFO - [ETH-USD] Received snapshot #3900, new mid_price: 4455.35
+2025-10-02 18:11:18 - root - INFO - [ETH-USD] Received snapshot #4000, new mid_price: 4460.8
+2025-10-02 18:11:30 - root - INFO - [ETH-USD] Received snapshot #4100, new mid_price: 4459.75
+2025-10-02 18:11:46 - root - INFO - [ETH-USD] Received snapshot #4200, new mid_price: 4460.6
+2025-10-02 18:12:01 - root - INFO - [ETH-USD] Received snapshot #4300, new mid_price: 4461.5
+2025-10-02 18:12:11 - root - INFO - Shutdown requested by user.

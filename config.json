@@ -1,10 +1,10 @@
 {
   "stp": "ACCOUNT",
-  "quote_loop_ms": 500,
+  "quote_loop_ms": 250,
   "replace_coalesce_ms": 400,
   "dead_man_switch_sec": 60,
   "risk": {
-    "max_net_position_usd": 100,
+    "max_net_position_usd": 500,
     "max_open_orders": 20,
     "min_balance_usd": 10
   },
@@ -16,20 +16,20 @@
       "alpha": 0.5,
       "beta": 0.25,
       "quote_notional_cap_usd": 50,
-      "replace_threshold_bps": 2,
+      "replace_threshold_bps": 5,
       "min_order_size": 0.00011,
       "post_only": true,
       "enabled": false
     },
     {
       "name": "ETH-USD",
-      "leverage": 5,
-      "K": 0.0003,
-      "alpha": 0.4,
-      "beta": 0.25,
-      "base_spread": 0.0005,
+      "leverage": 3,
+      "K": 0.0001,
+      "alpha": 0.1,
+      "beta": 0.2,
+      "base_spread": 0.00015,
       "quote_notional_cap_usd": 70,
-      "replace_threshold_bps": 2,
+      "replace_threshold_bps": 10,
       "min_order_size": 0.011,
       "post_only": true,
       "enabled": true
