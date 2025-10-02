@@ -29,7 +29,7 @@
       "beta": 0.2,
       "base_spread": 0.00015,
       "quote_notional_cap_usd": 70,
-      "replace_threshold_bps": 10,
+      "replace_threshold_bps": 15,
       "min_order_size": 0.011,
       "post_only": true,
       "enabled": true
