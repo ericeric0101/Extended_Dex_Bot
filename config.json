@@ -27,7 +27,7 @@
       "K": 0.0005,
       "alpha": 0.5,
       "beta": 0.25,
-      "base_spread": 0.0008,
+      "base_spread": 0.001,
       "quote_notional_cap_usd": 70,
       "replace_threshold_bps": 2,
       "min_order_size": 0.011,

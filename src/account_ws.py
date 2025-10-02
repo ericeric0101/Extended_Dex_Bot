@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 from typing import Any, AsyncIterator, Dict, List, Tuple
 
@@ -140,7 +141,7 @@ class AccountStream:
             fees_map = await self._fetch_fees()
             yield {"type": "CONFIG", "data": {"fees": fees_map, "stp": self._stp_level}}
         except Exception as e:
-            print(f"[account_ws] WARN: fetch fees failed: {e} (continue without CONFIG fees)")
+            logging.warning(f"[account_ws] Could not fetch fees: {e} (continuing without fee rates)")
 
         backoff = 0.5
         while True:
@@ -161,8 +162,8 @@ class AccountStream:
                             "WS_AUTH_MODE": self._ws_auth_mode,
                             "WS_AUTH_TOKEN?": bool(self._ws_auth_token),
                         }
-                        print(
-                            f"[account_ws] connecting to {url} headers={sanitized_headers} subprotocols={subprotocols}"
+                        logging.info(
+                            f"[account_ws] connecting to {url} with headers={sanitized_headers} and subprotocols={subprotocols}"
                         )
 
                     async with websockets.connect(
@@ -173,6 +174,7 @@ class AccountStream:
                         ping_timeout=10,
                         max_queue=None,
                     ) as ws:
+                        logging.info(f"[account_ws] Connection successful to {url}")
                         backoff = 0.5
 
                         # 連上了，再次（可選）廣播 CONFIG
@@ -187,33 +189,21 @@ class AccountStream:
                             yield msg
 
                 except InvalidStatusCode as e:
+                    logging.warning(f"[account_ws] Connection to {url} failed with status {e.status_code}. Trying next candidate.")
                     if self._debug_ws:
                         try:
                             headers_dbg = getattr(e, "headers", None)
-                            print(f"[account_ws] HTTP {e.status_code} response headers: {headers_dbg}")
+                            logging.debug(f"[account_ws] HTTP {e.status_code} response headers: {headers_dbg}")
                         except Exception:
                             pass
-                    if e.status_code == 401:
-                        # 401 常見原因提示
-                        # print(
-                        #     "[account_ws] 401 tips: "
-                        #     "1) 檢查 API Key 是否為該環境(Testnet/Mainnet)與子帳號；"
-                        #     "2) 嘗試設置 SUBACCOUNT_ID；"
-                        #     "3) 若文件要求 WS token，請在 .env 設定 WS_AUTH_TOKEN 與 WS_AUTH_MODE=query|subprotocol；"
-                        #     "4) 若此 host 不通會自動嘗試下一個候選 host。"
-                        # )
-                        # 換下一個候選 URL
-                        continue
-                    else:
-                        # 非 401，直接換下一個候選 URL
-                        continue
+                    continue
 
                 except (OSError, ConnectionClosed) as e:
-                    # print(f"[account_ws] disconnect: {e} (host={ws_base_url}); will rotate/Retry after {backoff:.1f}s")
-                    # 換下一個候選 URL
+                    logging.warning(f"[account_ws] Connection to {url} closed: {e}. Trying next candidate.")
                     continue
 
             # 所有候選都失敗：整體退避
+            logging.error(f"All account stream candidate URLs failed. Retrying in {backoff:.1f}s")
             await asyncio.sleep(backoff)
             backoff = min(backoff * 2, 8.0)
         self._debug_ws = os.getenv("EXTENDED_DEBUG_ACCOUNT_WS", "0") == "1"

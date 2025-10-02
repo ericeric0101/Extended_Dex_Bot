@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import AsyncIterator, Dict, Optional
@@ -35,20 +36,20 @@ class MarketDataSource:
         backoff = 0.5
         while True:
             try:
-                print(f"[md_source] Connecting to {url}")
+                logging.info(f"[md_source] Connecting to {url}")
                 async with websockets.connect(url, extra_headers=self._headers, ping_interval=20) as ws:
-                    print(f"[md_source] Connection successful to {url}")
+                    logging.info(f"[md_source] Connection successful to {url}")
                     backoff = 0.5
                     async for message in self._listen(ws):
                         snapshot = self._parse_orderbook(market, message)
                         if snapshot:
                             yield snapshot
             except (OSError, ConnectionClosed, websockets.exceptions.InvalidStatusCode) as e:
-                print(f"[md_source] Connection error on {url}: {e}")
+                logging.error(f"[md_source] Connection error on {url}: {e}")
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 8.0)
             except Exception as e:
-                print(f"[md_source] An unexpected error occurred on {url}: {e}")
+                logging.error(f"[md_source] An unexpected error occurred on {url}: {e}")
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 8.0)
 
@@ -91,7 +92,7 @@ class MarketDataSource:
             bid_levels = [_convert(level) for level in bids]
             ask_levels = [_convert(level) for level in asks]
         except (ValueError, KeyError) as e:
-            print(f"[md_source] Error parsing orderbook level: {e}, payload: {payload}")
+            logging.error(f"[md_source] Error parsing orderbook level: {e}, payload: {payload}")
             return None
 
         timestamp_val = (

@@ -2,18 +2,19 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 import os
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List
 
-from rich.console import Console
-from rich.table import Table
 from x10.perpetual.orders import SelfTradeProtectionLevel
 
 from .account_ws import AccountStream
 from .config import BotConfig, MarketConfig, get_endpoints, get_settings, load_bot_config
 from .executor import ExecutionEngine, build_trading_client
+from .logging_setup import setup_logging
 from .md_source import MarketDataSource
 from .orderbook import OrderBook
 from .pnl import PnLTracker
@@ -21,7 +22,6 @@ from .quoting import MarketQuotingConfig, QuoteEngine
 from .rest import RestClient
 from .risk import RiskConfig, RiskManager
 
-console = Console()
 DEBUG_ACCOUNT_EVENTS = os.getenv("EXTENDED_DEBUG_ACCOUNT_EVENTS", "0") == "1"
 
 
@@ -59,7 +59,7 @@ async def quote_loop(
 
         state.mid_price = mid
 
-        max_net_units = Decimal("0") if max_net_usd <= 0 else max_net_usd / mid
+        max_net_units = Decimal("0") if max_net_usd <= 0 else max_net_units / mid
         max_order_units = Decimal("0") if cap_usd <= 0 else cap_usd / mid
 
         if max_order_units <= Decimal("0"):
@@ -109,7 +109,7 @@ async def account_loop(
         data = event.get("data") or {}
 
         if DEBUG_ACCOUNT_EVENTS:
-            console.log({"account_event": event})
+            logging.info(f"Account Event: {json.dumps(event)}")
 
         if event_type == "POSITION":
             positions = data.get("positions") or []
@@ -184,10 +184,9 @@ async def account_loop(
 async def monitor_pnl(pnl: PnLTracker, interval: float = 1.0) -> None:
     while True:
         snapshot = pnl.snapshot()
-        table = Table("Component", "Value")
-        for key, value in snapshot.items():
-            table.add_row(key, f"{value:.6f}")
-        console.print(table)
+        # Convert Decimal objects to strings for JSON serialization
+        log_snapshot = {k: str(v) for k, v in snapshot.items()}
+        logging.info(f"PnL Snapshot: {json.dumps(log_snapshot)}")
         await asyncio.sleep(interval)
 
 
@@ -202,7 +201,7 @@ async def _orderbook_consumer(
         orderbook.ingest_snapshot(snapshot)
         state.mid_price = orderbook.mid_price()
         if i % 100 == 0:  # Log every 100 snapshots to avoid spamming
-            console.log(f"[{market}] Received snapshot #{i}, new mid_price: {state.mid_price}")
+            logging.info(f"[{market}] Received snapshot #{i}, new mid_price: {state.mid_price}")
         i += 1
 
 
@@ -234,21 +233,13 @@ async def _arm_dead_man_switch(bot_cfg: BotConfig, settings, endpoints) -> None:
         return
     rest_client = RestClient(settings, endpoints)
     try:
-        payload = {"countdownTime": bot_cfg.dead_man_switch_sec}
         await rest_client.post(
             "/user/deadmanswitch",
             params={"countdownTime": bot_cfg.dead_man_switch_sec},
         )
-        # console.log(
-        #     {
-        #         "dead_man_switch": {
-        #             "countdown": bot_cfg.dead_man_switch_sec,
-        #             "status": "armed",
-        #         }
-        #     }
-        # )
+        logging.info(f"Dead man's switch armed for {bot_cfg.dead_man_switch_sec} seconds.")
     except Exception as exc:  # pragma: no cover - network dependent
-        console.log({"dead_man_switch": {"status": "failed", "error": str(exc)}})
+        logging.error(f"Failed to arm dead man's switch: {exc}")
     finally:
         await rest_client.aclose()
 
@@ -260,14 +251,12 @@ async def _hydrate_market_trading_rules(bot_cfg: BotConfig, settings, endpoints)
             try:
                 response = await rest_client.get("/info/markets", params={"market": market_cfg.name})
             except Exception as exc:  # pragma: no cover - network dependent
-                console.log(
-                    {"market_rules": {"market": market_cfg.name, "status": "failed", "error": str(exc)}}
-                )
+                logging.error(f"Failed to get market rules for {market_cfg.name}: {exc}")
                 continue
 
             data = response.get("data") or []
             if not data:
-                console.log({"market_rules": {"market": market_cfg.name, "status": "missing"}})
+                logging.warning(f"Market rules for {market_cfg.name} are missing in API response.")
                 continue
 
             trading_cfg = data[0].get("tradingConfig", {})
@@ -278,14 +267,9 @@ async def _hydrate_market_trading_rules(bot_cfg: BotConfig, settings, endpoints)
             if price_tick is not None:
                 market_cfg.price_tick = float(price_tick)
 
-            console.log(
-                {
-                    "market_rules": {
-                        "market": market_cfg.name,
-                        "min_order_size": market_cfg.min_order_size,
-                        "price_tick": market_cfg.price_tick,
-                    }
-                }
+            logging.info(
+                f"Hydrated market rules for {market_cfg.name}: "
+                f"min_order_size={market_cfg.min_order_size}, price_tick={market_cfg.price_tick}"
             )
     finally:
         await rest_client.aclose()
@@ -303,35 +287,34 @@ async def run() -> None:
     trading_client = await build_trading_client(settings)
 
     try:
-        console.log("--- Checking Account Info ---")
+        logging.info("--- Checking Account Info ---")
         balance = await trading_client.account.get_balance()
-        console.log(balance.to_pretty_json())
+        logging.info(f"Balance: {balance.to_pretty_json()}")
         positions = await trading_client.account.get_positions()
-        console.log(positions.to_pretty_json())
-        console.log("--- Account Info OK ---")
+        logging.info(f"Positions: {positions.to_pretty_json()}")
+        logging.info("--- Account Info OK ---")
     except Exception as e:
-        console.log("--- FAILED to get account info ---")
-        console.log(e)
+        logging.error(f"--- FAILED to get account info: {e} ---")
         return
 
     try:
         stp_level = SelfTradeProtectionLevel[bot_cfg.stp.upper()]
     except KeyError:
-        console.log({"stp": {"status": "unsupported", "value": bot_cfg.stp}})
+        logging.warning(f"Unsupported STP level '{bot_cfg.stp}', defaulting to ACCOUNT.")
         stp_level = SelfTradeProtectionLevel.ACCOUNT
     account_stream = AccountStream(settings=settings, endpoints=endpoints)
     pnl = PnLTracker()
 
     enabled_markets: List[MarketConfig] = [m for m in bot_cfg.markets if m.enabled]
     if not enabled_markets:
-        console.log("No markets enabled in config.json; exiting.")
+        logging.warning("No markets enabled in config.json; exiting.")
         return
 
     market_states: Dict[str, MarketState] = {cfg.name: MarketState() for cfg in enabled_markets}
 
     tasks = [
         asyncio.create_task(account_loop(account_stream, market_states, pnl)),
-        asyncio.create_task(monitor_pnl(pnl, interval=5.0)),
+        asyncio.create_task(monitor_pnl(pnl, interval=600.0)),  # 10 minutes
     ]
 
     for market_cfg in enabled_markets:
@@ -376,10 +359,11 @@ async def run() -> None:
 
 
 def main() -> None:
+    setup_logging()
     try:
         asyncio.run(run())
     except KeyboardInterrupt:
-        console.log("shutdown requested")
+        logging.info("Shutdown requested by user.")
 
 
 if __name__ == "__main__":
