@@ -197,9 +197,13 @@ async def _orderbook_consumer(
     source: MarketDataSource,
     state: MarketState,
 ) -> None:
+    i = 0
     async for snapshot in source.orderbook_snapshots(market):
         orderbook.ingest_snapshot(snapshot)
         state.mid_price = orderbook.mid_price()
+        if i % 100 == 0:  # Log every 100 snapshots to avoid spamming
+            console.log(f"[{market}] Received snapshot #{i}, new mid_price: {state.mid_price}")
+        i += 1
 
 
 def _build_quote_engine(market_cfg: MarketConfig) -> QuoteEngine:
@@ -226,26 +230,25 @@ def _build_risk_manager(bot_cfg: BotConfig) -> RiskManager:
 
 
 async def _arm_dead_man_switch(bot_cfg: BotConfig, settings, endpoints) -> None:
-    if bot_cfg.dead_mans_switch_sec <= 0:
+    if bot_cfg.dead_man_switch_sec <= 0:
         return
     rest_client = RestClient(settings, endpoints)
     try:
-        payload = {"countdownTime": bot_cfg.dead_mans_switch_sec}
+        payload = {"countdownTime": bot_cfg.dead_man_switch_sec}
         await rest_client.post(
-            "/user/deadmansswitch",
-            json=payload,
-            params={"countdownTime": bot_cfg.dead_mans_switch_sec},
+            "/user/deadmanswitch",
+            params={"countdownTime": bot_cfg.dead_man_switch_sec},
         )
         # console.log(
         #     {
-        #         "dead_mans_switch": {
-        #             "countdown": bot_cfg.dead_mans_switch_sec,
+        #         "dead_man_switch": {
+        #             "countdown": bot_cfg.dead_man_switch_sec,
         #             "status": "armed",
         #         }
         #     }
         # )
     except Exception as exc:  # pragma: no cover - network dependent
-        console.log({"dead_mans_switch": {"status": "failed", "error": str(exc)}})
+        console.log({"dead_man_switch": {"status": "failed", "error": str(exc)}})
     finally:
         await rest_client.aclose()
 
@@ -298,6 +301,19 @@ async def run() -> None:
 
     market_data = MarketDataSource(settings=settings, endpoints=endpoints)
     trading_client = await build_trading_client(settings)
+
+    try:
+        console.log("--- Checking Account Info ---")
+        balance = await trading_client.account.get_balance()
+        console.log(balance.to_pretty_json())
+        positions = await trading_client.account.get_positions()
+        console.log(positions.to_pretty_json())
+        console.log("--- Account Info OK ---")
+    except Exception as e:
+        console.log("--- FAILED to get account info ---")
+        console.log(e)
+        return
+
     try:
         stp_level = SelfTradeProtectionLevel[bot_cfg.stp.upper()]
     except KeyError:
@@ -324,7 +340,7 @@ async def run() -> None:
         quote_engine = _build_quote_engine(market_cfg)
         risk_manager = _build_risk_manager(bot_cfg)
         execution = ExecutionEngine(
-            market=market_cfg.name,
+            market_cfg=market_cfg,
             trading_client=trading_client,
             replace_threshold_bps=Decimal(str(market_cfg.replace_threshold_bps)),
             post_only=market_cfg.post_only,

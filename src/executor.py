@@ -7,11 +7,11 @@ from decimal import Decimal
 from typing import Dict, Optional, Protocol
 
 from x10.perpetual.accounts import StarkPerpetualAccount
-from x10.perpetual.configuration import MAINNET_CONFIG, TESTNET_CONFIG
+from x10.perpetual.configuration import STARKNET_MAINNET_CONFIG, TESTNET_CONFIG
 from x10.perpetual.orders import OrderSide, SelfTradeProtectionLevel, TimeInForce
 from x10.perpetual.trading_client import PerpetualTradingClient
 
-from .config import RuntimeSettings
+from .config import MarketConfig, RuntimeSettings
 from .risk import RiskManager
 from .schemas import QuoteDecision
 
@@ -46,6 +46,10 @@ class TradingClientAdapter:
 
     def __init__(self, client: PerpetualTradingClient) -> None:
         self._client = client
+
+    @property
+    def account(self):
+        return self._client.account
 
     async def place_order(
         self,
@@ -86,7 +90,7 @@ async def build_trading_client(settings: RuntimeSettings) -> TradingClientAdapte
     if missing:
         joined = ", ".join(missing)
         raise ValueError(f"missing credentials: {joined}")
-    config = TESTNET_CONFIG if settings.environment == "testnet" else MAINNET_CONFIG
+    config = TESTNET_CONFIG if settings.environment == "testnet" else STARKNET_MAINNET_CONFIG
     account = StarkPerpetualAccount(
         vault=settings.vault_id,
         private_key=settings.private_key,
@@ -102,14 +106,15 @@ class ExecutionEngine:
 
     def __init__(
         self,
-        market: str,
+        market_cfg: MarketConfig,
         trading_client: TradingClientProtocol,
         replace_threshold_bps: Decimal,
         post_only: bool = True,
         stp_level: SelfTradeProtectionLevel = SelfTradeProtectionLevel.ACCOUNT,
         risk_manager: Optional[RiskManager] = None,
     ) -> None:
-        self._market = market
+        self._market_cfg = market_cfg
+        self._market = market_cfg.name
         self._client = trading_client
         self._post_only = post_only
         self._stp_level = stp_level
@@ -144,9 +149,15 @@ class ExecutionEngine:
             await self._place(side, target_price, target_size)
 
     async def _place(self, side: OrderSide, price: Decimal, size: Decimal) -> None:
+        quantize_step = Decimal(str(self._market_cfg.min_order_size))
+        rounded_size = size.quantize(quantize_step)
+
+        if rounded_size == Decimal("0"):
+            return
+
         order = await self._client.place_order(
             market_name=self._market,
-            amount_of_synthetic=size,
+            amount_of_synthetic=rounded_size,
             price=price,
             side=side,
             post_only=self._post_only,

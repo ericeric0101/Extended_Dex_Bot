@@ -33,7 +33,7 @@
 ## config.json 快速概覽
 - `stp`: 自成交保護層級（預設 `ACCOUNT`），會映射到 X10 `SelfTradeProtectionLevel`。
 - `quote_loop_ms` / `replace_coalesce_ms`: 報價節奏與撤改節流（目前節流參數保留以利後續實作）。
-- `dead_mans_switch_sec`: 啟動時呼叫 `/user/deadmansswitch` 的倒數秒數。
+- `dead_mans_switch_sec`: 啟動時呼叫 `/user/deadmanswitch` 的倒數秒數。
 - `risk`: 以 USD 表示的淨部位與帳戶餘額限制；程式會依當前中價換算合約數量。
 - `markets`: 可為多個市場設定 K / α / β、名目上限、最小下單量、post-only 與啟用開關。
 - `fees_override`: 可覆寫 maker/taker 費率（填 `null` 時改用 API `CONFIG` 事件或 `/user/fees`）。
@@ -76,6 +76,7 @@
   - K 越小 → 報價更貼近中間價，但成交率高、風險大。
 - `alpha`: 庫存敏感度（inventory aversion）。越高 → 你會更積極避開單邊部位（例如多了太多 BTC 就調整賣價靠近，趕快平倉）。
 - `beta`: 波動度調整因子。越高 → 在高波動時報價會更寬（避險）。
+- `base_spread`: 這是「基礎利潤 (價差)」。它決定了您的買單和賣單分別比市場中間價低多少和高多少。這是控制您交易頻率最直接的工具。這個值越小，您的報價就越接近市場中心價，也就越容易成交。如果您的報價從未被觸發，請嘗試逐步調小 `base_spread`。例如，從預設的 0.001 (代表 0.1%) 開始，嘗試 0.0008、0.0005 等。
 - `quote_notional_cap_usd`: 單邊報價的最大名目金額上限。例如 50 → 同時 bid/ask 各最多掛 50 USD。
 - `replace_threshold_bps`: 多少價差（basis points, 0.01%）才觸發報價更新。避免小波動就不停改單。
 - `min_order_size`: 該市場最小下單數量（以標的單位計）。e.g. BTC 可能是 0.001 BTC。

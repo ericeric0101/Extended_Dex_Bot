@@ -24,26 +24,36 @@ class MarketDataSource:
         self._endpoints = endpoints
         self._headers = {
             "User-Agent": settings.user_agent,
+            "Origin": "https://app.extended.exchange",  # Essential header
         }
         if settings.api_key:
             self._headers["X-Api-Key"] = settings.api_key
 
     async def orderbook_snapshots(self, market: str) -> AsyncIterator[OrderbookSnapshot]:
-        url = f"{self._endpoints.ws_base}/orderbooks/{market}"
+        base_url = str(self._endpoints.ws_base).rstrip('/')
+        url = f"{base_url}/orderbooks/{market}"
         backoff = 0.5
         while True:
             try:
+                print(f"[md_source] Connecting to {url}")
                 async with websockets.connect(url, extra_headers=self._headers, ping_interval=20) as ws:
+                    print(f"[md_source] Connection successful to {url}")
                     backoff = 0.5
                     async for message in self._listen(ws):
                         snapshot = self._parse_orderbook(market, message)
                         if snapshot:
                             yield snapshot
-            except (OSError, ConnectionClosed):
+            except (OSError, ConnectionClosed, websockets.exceptions.InvalidStatusCode) as e:
+                print(f"[md_source] Connection error on {url}: {e}")
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 8.0)
+            except Exception as e:
+                print(f"[md_source] An unexpected error occurred on {url}: {e}")
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 8.0)
 
     async def _listen(self, ws: WebSocketClientProtocol) -> AsyncIterator[Dict]:
+        """Listens for messages and yields them."""
         while True:
             raw = await ws.recv()
             yield json.loads(raw)
@@ -53,41 +63,53 @@ class MarketDataSource:
         if not isinstance(data, dict):
             return None
 
+        # The market name in the message might be different if subscribing to all markets
+        market_in_message = data.get("m", market)
+
         book_section = data.get("orderbook", data)
         if isinstance(book_section, dict):
-            bids = book_section.get("bids") or book_section.get("buy")
-            asks = book_section.get("asks") or book_section.get("sell")
+            bids = book_section.get("bids") or book_section.get("b")
+            asks = book_section.get("asks") or book_section.get("a")
         else:
-            bids = data.get("bids") or data.get("buy")
-            asks = data.get("asks") or data.get("sell")
+            bids = data.get("bids") or data.get("b")
+            asks = data.get("asks") or data.get("a")
 
         if not bids or not asks:
             return None
+
         def _convert(level: Dict | list | tuple) -> OrderbookLevel:
             if isinstance(level, (list, tuple)) and len(level) >= 2:
                 price, size = level[0], level[1]
             elif isinstance(level, dict):
-                price = level.get("price")
-                size = level.get("size") or level.get("quantity")
+                price = level.get("price") or level.get("p")
+                size = level.get("size") or level.get("quantity") or level.get("q")
             else:
-                raise ValueError("unknown level format")
+                raise ValueError(f"unknown level format: {level}")
             return OrderbookLevel(price=Decimal(str(price)), size=Decimal(str(size)))
 
-        bid_levels = [_convert(level) for level in bids]
-        ask_levels = [_convert(level) for level in asks]
-        timestamp = (
+        try:
+            bid_levels = [_convert(level) for level in bids]
+            ask_levels = [_convert(level) for level in asks]
+        except (ValueError, KeyError) as e:
+            print(f"[md_source] Error parsing orderbook level: {e}, payload: {payload}")
+            return None
+
+        timestamp_val = (
             data.get("timestamp")
             or payload.get("timestamp")
             or payload.get("ts")
             or data.get("ts")
-            or datetime.now(timezone.utc).isoformat()
         )
-        ts = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00")) if isinstance(timestamp, str) else datetime.now(timezone.utc)
-        return OrderbookSnapshot(market=market, bids=bid_levels, asks=ask_levels, timestamp=ts)
+        if timestamp_val:
+            # Convert from milliseconds to a timezone-aware datetime object
+            ts = datetime.fromtimestamp(int(timestamp_val) / 1000, tz=timezone.utc)
+        else:
+            ts = datetime.now(timezone.utc)
+
+        return OrderbookSnapshot(market=market_in_message, bids=bid_levels, asks=ask_levels, timestamp=ts)
 
 
 async def stream_orderbook_to_local_book(book: OrderBook, source: MarketDataSource) -> None:
     """Populate a local OrderBook from the public feed."""
-
     async for snapshot in source.orderbook_snapshots(book.market):
         book.ingest_snapshot(snapshot)

@@ -25,7 +25,7 @@ class RuntimeSettings(BaseModel):
     vault_id: int | None = Field(default=None, alias="EXTENDED_VAULT_ID")
     user_agent: str = Field(default="extended-mm-bot/0.1", alias="USER_AGENT")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
-    dead_mans_switch_sec: int = Field(default=120, alias="DEAD_MANS_SWITCH_SEC")
+    dead_man_switch_sec: int = Field(default=120, alias="DEAD_MAN_SWITCH_SEC")
 
     model_config = {
         "populate_by_name": True,
@@ -63,7 +63,7 @@ class BotConfig(BaseModel):
     stp: str = "ACCOUNT"
     quote_loop_ms: int = 250
     replace_coalesce_ms: int = 400
-    dead_mans_switch_sec: int = 120
+    dead_man_switch_sec: int = 120
     risk: RiskSettings = RiskSettings()
     markets: List[MarketConfig] = Field(default_factory=list)
     fees_override: FeesOverride = FeesOverride()
@@ -97,7 +97,7 @@ def _load_environment() -> RuntimeSettings:
     data = {key: os.getenv(key) for key in os.environ.keys() if key.startswith("EXTENDED_")}
     data["USER_AGENT"] = os.getenv("USER_AGENT", "extended-mm-bot/0.1")
     data["LOG_LEVEL"] = os.getenv("LOG_LEVEL", "INFO")
-    data["DEAD_MANS_SWITCH_SEC"] = os.getenv("DEAD_MANS_SWITCH_SEC", "120")
+    data["DEAD_MAN_SWITCH_SEC"] = os.getenv("DEAD_MAN_SWITCH_SEC", "120")
     environment = os.getenv("EXTENDED_ENV", "testnet")
     return RuntimeSettings(environment=environment, **data)
 

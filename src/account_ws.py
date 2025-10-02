@@ -32,7 +32,7 @@ class AccountStream:
         self._rest_base = str(endpoints.rest_base)
 
         # Primary WS base from config (通常是無 api. 的 host)
-        primary_ws_base = str(endpoints.ws_base)  # e.g. wss://starknet.sepolia.extended.exchange/stream.extended.exchange/v1
+        primary_ws_base = str(endpoints.ws_base).rstrip('/')  # e.g. wss://starknet.sepolia.extended.exchange/stream.extended.exchange/v1
 
         # 有些私有 WS 需要 api. 子網域：嘗試備援 host
         # 將 host 部分插入 api. 作為備援，例如：
@@ -77,6 +77,9 @@ class AccountStream:
 
         # STP 預設
         self._stp_level = getattr(settings, "stp_level", "ACCOUNT").upper()
+
+        # Debug toggles
+        self._debug_ws = os.getenv("EXTENDED_DEBUG_ACCOUNT_WS", "0") == "1"
 
     async def _fetch_fees(self) -> Dict[str, Any]:
         """抓取目前 maker/taker 費率。"""

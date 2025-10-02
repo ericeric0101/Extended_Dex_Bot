@@ -2,11 +2,11 @@
   "stp": "ACCOUNT",
   "quote_loop_ms": 1000,
   "replace_coalesce_ms": 400,
-  "dead_mans_switch_sec": 120,
+  "dead_man_switch_sec": 120,
   "risk": {
     "max_net_position_usd": 100,
     "max_open_orders": 20,
-    "min_balance_usd": 50
+    "min_balance_usd": 10
   },
   "markets": [
     {
@@ -17,7 +17,7 @@
       "beta": 0.25,
       "quote_notional_cap_usd": 50,
       "replace_threshold_bps": 2,
-      "min_order_size": 0.0002,
+      "min_order_size": 0.00011,
       "post_only": true,
       "enabled": false
     },
@@ -27,9 +27,10 @@
       "K": 0.0005,
       "alpha": 0.5,
       "beta": 0.25,
-      "quote_notional_cap_usd": 50,
+      "base_spread": 0.0008,
+      "quote_notional_cap_usd": 70,
       "replace_threshold_bps": 2,
-      "min_order_size": 0.01,
+      "min_order_size": 0.011,
       "post_only": true,
       "enabled": true
     }
