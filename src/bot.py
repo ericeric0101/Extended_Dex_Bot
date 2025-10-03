@@ -218,14 +218,37 @@ async def account_loop(
                 market = trade.get("market")
                 state = states.setdefault(market, MarketState())
                 price = Decimal(str(trade.get("price", "0")))
-                size = Decimal(str(trade.get("size") or trade.get("qty") or "0"))
-                side = (trade.get("side") or "").upper()
-                direction = Decimal("1") if side in {"BUY", "LONG"} else Decimal("-1")
+                size = Decimal(str(trade.get("size") or trade.get("qty") or trade.get("quantity") or "0"))
                 if size == Decimal("0"):
                     continue
 
+                signed = trade.get("signed_size") or trade.get("signedSize") or trade.get("signedQty")
+                if signed is not None:
+                    try:
+                        trade_delta = Decimal(str(signed))
+                    except Exception:
+                        trade_delta = Decimal("0")
+                else:
+                    side = (trade.get("side") or "").upper()
+                    direction = Decimal("1") if side in {"BUY", "LONG"} else Decimal("-1")
+                    liquidity_flag = (trade.get("liquidity") or "").upper()
+                    is_taker_raw = trade.get("isTaker")
+                    if is_taker_raw is not None:
+                        if isinstance(is_taker_raw, str):
+                            is_taker = is_taker_raw.lower() in {"1", "true", "t", "yes"}
+                        else:
+                            is_taker = bool(is_taker_raw)
+                    else:
+                        is_taker = None
+
+                    if is_taker is False:
+                        direction *= Decimal("-1")
+                    elif liquidity_flag == "MAKER" and side in {"BUY", "LONG", "SELL", "SHORT"}:
+                        direction *= Decimal("-1")
+                    trade_delta = size * direction
+
                 prev_inventory = state.inventory
-                updated_inventory = prev_inventory + size * direction
+                updated_inventory = prev_inventory + trade_delta
                 if updated_inventory == Decimal("0"):
                     state.entry_price = Decimal("0")
                 else:
@@ -240,7 +263,7 @@ async def account_loop(
                 state.inventory = updated_inventory
 
                 mid = state.mid_price or price
-                pnl.record_fill(price=price, size=size, side=side, mid_at_fill=mid)
+                pnl.record_fill(price=price, size=size, side=(trade.get("side") or ""), mid_at_fill=mid)
 
                 fee_value = trade.get("fee")
                 if fee_value is not None:
@@ -261,6 +284,7 @@ async def account_loop(
                 or balance.get("available")
                 or balance.get("AvailableForTrade")
             )
+            exposure_value = balance.get("exposure") or balance.get("Exposure")
             if equity_value is not None:
                 try:
                     account_state.equity = Decimal(str(equity_value))
@@ -271,6 +295,16 @@ async def account_loop(
                     account_state.available = Decimal(str(available_value))
                 except Exception:
                     pass
+            if exposure_value is not None:
+                try:
+                    exposure = Decimal(str(exposure_value))
+                except Exception:
+                    exposure = None
+                if exposure is not None and exposure.copy_abs() <= Decimal("1e-6"):
+                    for state in states.values():
+                        state.inventory = Decimal("0")
+                        state.entry_price = Decimal("0")
+                        state.mid_price = None
 
 
 async def monitor_pnl(pnl: PnLTracker, interval: float = 1.0) -> None:
