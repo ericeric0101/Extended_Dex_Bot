@@ -27,13 +27,22 @@ class RiskManager:
         self._config.max_net_position = max_net_position
         self._config.max_order_size = max_order_size
 
-    def can_place_order(self, net_position: Decimal, order_size: Decimal) -> bool:
-        if self._config.max_net_position > Decimal("0") and abs(net_position) + order_size > self._config.max_net_position:
+    def can_place_order(self, current_position: Decimal, order_size: Decimal, side: int) -> bool:
+        if order_size <= Decimal("0"):
             return False
+
+        next_position = current_position + (order_size * Decimal(side))
+
+        if self._config.max_net_position > Decimal("0"):
+            if abs(next_position) > self._config.max_net_position:
+                return False
+
         if self._config.max_order_size > Decimal("0") and order_size > self._config.max_order_size:
             return False
+
         if self._open_orders >= self._config.max_open_orders:
             return False
+
         return True
 
     def register_order(self) -> None:

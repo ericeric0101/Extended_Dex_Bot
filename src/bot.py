@@ -136,14 +136,10 @@ async def quote_loop(
         if capped_ask < min_units_cfg:
             capped_ask = Decimal("0")
 
-        bid_allowed = risk_manager.can_place_order(inventory, capped_bid)
-        ask_allowed = risk_manager.can_place_order(-inventory, capped_ask)
+        bid_allowed = risk_manager.can_place_order(inventory, capped_bid, side=1)
+        ask_allowed = risk_manager.can_place_order(inventory, capped_ask, side=-1)
         bid_size = capped_bid if bid_allowed else Decimal("0")
         ask_size = capped_ask if ask_allowed else Decimal("0")
-
-        if bid_size == Decimal("0") and ask_size == Decimal("0"):
-            await asyncio.sleep(quote_interval)
-            continue
 
         adjusted = decision.model_copy(update={"bid_size": bid_size, "ask_size": ask_size})
         await execution.process_quote(adjusted)
