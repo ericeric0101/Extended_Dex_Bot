@@ -51,6 +51,10 @@ async def quote_loop(
     cap_usd = Decimal(str(market_cfg.quote_notional_cap_usd))
     min_units_cfg = Decimal(str(market_cfg.min_order_size))
 
+    # 添加日誌計數器 - 每60秒（1分鐘）記錄一次
+    log_counter = 0
+    log_interval_loops = int(60 / quote_interval)  # 1分鐘對應的循環次數
+
     while True:
         mid = orderbook.mid_price()
         sigma = orderbook.sigma()
@@ -73,15 +77,47 @@ async def quote_loop(
         else:
             max_net_units = max(max_net_units, min_units_cfg)
 
+        inventory = state.inventory
+        max_order_units = max(max_order_units, abs(inventory))
+
         risk_manager.update_limits(max_net_units, max_order_units)
 
-        inventory = state.inventory
-
         decision = quote_engine.compute_quote(mid, inventory, sigma or Decimal("0"), funding_rate)
-        bid_allowed = risk_manager.can_place_order(inventory, decision.bid_size)
-        ask_allowed = risk_manager.can_place_order(-inventory, decision.ask_size)
-        bid_size = decision.bid_size if bid_allowed else Decimal("0")
-        ask_size = decision.ask_size if ask_allowed else Decimal("0")
+
+        # 格式化日誌輸出 - 只顯示關鍵信息到小數點後三位
+        bid_bps = float((mid - decision.bid_price) / mid * 10000)
+        ask_bps = float((decision.ask_price - mid) / mid * 10000)
+
+        # 只在計數器到達時記錄日誌
+        if log_counter % log_interval_loops == 0:
+            bid_bps = float((mid - decision.bid_price) / mid * 10000)
+            ask_bps = float((decision.ask_price - mid) / mid * 10000)
+            logging.info(
+                f"[{market_cfg.name}] "
+                f"mid={float(mid):.2f} | "
+                f"inventory={float(inventory):.4f} | "
+                f"fair_price={float(decision.fair_price):.2f} | "
+                f"σ={float(sigma or 0):.5f} | "
+                f"inv={float(inventory):.3f} | "
+                f"bid={float(decision.bid_price):.2f} (-{bid_bps:.2f}bps) | "
+                f"ask={float(decision.ask_price):.2f} (+{ask_bps:.2f}bps) | "
+                f"spread={float(decision.half_spread * 10000):.2f}bps"
+            )
+        
+        log_counter += 1
+        
+        capped_bid = min(decision.bid_size, max_order_units)
+        capped_ask = min(decision.ask_size, max_order_units)
+
+        if capped_bid < min_units_cfg:
+            capped_bid = Decimal("0")
+        if capped_ask < min_units_cfg:
+            capped_ask = Decimal("0")
+
+        bid_allowed = risk_manager.can_place_order(inventory, capped_bid)
+        ask_allowed = risk_manager.can_place_order(-inventory, capped_ask)
+        bid_size = capped_bid if bid_allowed else Decimal("0")
+        ask_size = capped_ask if ask_allowed else Decimal("0")
 
         if bid_size == Decimal("0") and ask_size == Decimal("0"):
             await asyncio.sleep(quote_interval)
@@ -115,20 +151,24 @@ async def account_loop(
         if event_type == "POSITION":
             positions = data.get("positions") or []
             is_snapshot = data.get("isSnapshot", False)
-            if is_snapshot:
-                for state in states.values():
-                    state.inventory = Decimal("0")
-                    state.entry_price = Decimal("0")
+            seen_markets = set()
 
             for pos in positions:
                 market = pos.get("market")
+                if not market:
+                    continue
+                seen_markets.add(market)
                 state = states.setdefault(market, MarketState())
                 size = Decimal(str(pos.get("size", "0")))
                 side = (pos.get("side") or "").upper()
                 signed_size = size if side != "SHORT" else -size
                 state.inventory = signed_size
-                entry_price = pos.get("open_price") or pos.get("entry_price") or "0"
-                entry_price_value = pos.get("open_price") or pos.get("openPrice") or pos.get("entry_price")
+                entry_price_value = (
+                    pos.get("open_price")
+                    or pos.get("openPrice")
+                    or pos.get("entry_price")
+                    or pos.get("entryPrice")
+                )
                 state.entry_price = Decimal(str(entry_price_value)) if entry_price_value is not None else Decimal("0")
                 mark_price_value = pos.get("mark_price") or pos.get("markPrice")
                 if mark_price_value is not None:
@@ -139,6 +179,19 @@ async def account_loop(
                         current_mid=state.mid_price,
                         entry_price=state.entry_price,
                     )
+
+            if is_snapshot:
+                markets_to_clear = set(states.keys()) - seen_markets
+            elif not positions:
+                markets_to_clear = set(states.keys())
+            else:
+                markets_to_clear = {market for market in states.keys() if market not in seen_markets}
+
+            for market in markets_to_clear:
+                state = states.setdefault(market, MarketState())
+                state.inventory = Decimal("0")
+                state.entry_price = Decimal("0")
+                state.mid_price = None
 
         elif event_type == "TRADE":
             trades = data.get("trades") or []
@@ -229,8 +282,8 @@ def _build_risk_manager(bot_cfg: BotConfig) -> RiskManager:
     return RiskManager(config=risk_config)
 
 
-async def _arm_dead_man_switch(bot_cfg: BotConfig, settings: RuntimeSettings, endpoints: EndpointConfig) -> None:
-    if bot_cfg.dead_man_switch_sec <= 0:
+async def _arm_dead_mans_switch(bot_cfg: BotConfig, settings: RuntimeSettings, endpoints: EndpointConfig) -> None:
+    if bot_cfg.dead_mans_switch_sec <= 0:
         return
 
     headers = {"User-Agent": settings.user_agent}
@@ -238,7 +291,7 @@ async def _arm_dead_man_switch(bot_cfg: BotConfig, settings: RuntimeSettings, en
         headers["X-Api-Key"] = settings.api_key
 
     url = f"{str(endpoints.rest_base).rstrip('/')}/user/deadmanswitch"
-    params = {"countdownTime": bot_cfg.dead_man_switch_sec}
+    params = {"countdownTime": bot_cfg.dead_mans_switch_sec}
 
     try:
         async with httpx.AsyncClient(headers=headers) as client:
@@ -246,7 +299,7 @@ async def _arm_dead_man_switch(bot_cfg: BotConfig, settings: RuntimeSettings, en
             response.raise_for_status()
 
         if response.status_code == 200:
-            logging.info(f"Dead man's switch armed for {bot_cfg.dead_man_switch_sec} seconds.")
+            logging.info(f"Dead man's switch armed for {bot_cfg.dead_mans_switch_sec} seconds.")
         else:
             logging.error(
                 f"Failed to arm dead man's switch. Status: {response.status_code}, Response: {response.text}"
@@ -273,15 +326,21 @@ async def _hydrate_market_trading_rules(bot_cfg: BotConfig, settings, endpoints)
 
             trading_cfg = data[0].get("tradingConfig", {})
             min_order = trading_cfg.get("minOrderSize")
+            min_order_change = trading_cfg.get("minOrderSizeChange")
             price_tick = trading_cfg.get("minPriceChange")
+
             if min_order is not None:
                 market_cfg.min_order_size = float(min_order)
+            if min_order_change is not None:
+                market_cfg.min_order_size_change = float(min_order_change)
             if price_tick is not None:
-                market_cfg.price_tick = float(price_tick)
+                market_cfg.min_price_change = float(price_tick)
 
             logging.info(
                 f"Hydrated market rules for {market_cfg.name}: "
-                f"min_order_size={market_cfg.min_order_size}, price_tick={market_cfg.price_tick}"
+                f"min_order_size={market_cfg.min_order_size}, "
+                f"min_order_size_change={market_cfg.min_order_size_change}, "
+                f"price_tick={market_cfg.min_price_change}"
             )
     finally:
         await rest_client.aclose()
@@ -292,8 +351,11 @@ async def run() -> None:
     endpoints = get_endpoints()
     bot_cfg = load_bot_config()
 
+    # First, hydrate the market rules to get the correct precision
     await _hydrate_market_trading_rules(bot_cfg, settings, endpoints)
-    await _arm_dead_man_switch(bot_cfg, settings, endpoints)
+    
+    # Then, arm the dead man's switch
+    await _arm_dead_mans_switch(bot_cfg, settings, endpoints)
 
     market_data = MarketDataSource(settings=settings, endpoints=endpoints)
     trading_client = await build_trading_client(settings)
@@ -329,6 +391,7 @@ async def run() -> None:
         asyncio.create_task(monitor_pnl(pnl, interval=600.0)),  # 10 minutes
     ]
 
+    # Now, with hydrated rules, create the market-specific components
     for market_cfg in enabled_markets:
         state = market_states[market_cfg.name]
         orderbook = OrderBook(market=market_cfg.name)

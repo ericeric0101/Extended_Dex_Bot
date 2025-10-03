@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_CEILING, Decimal
 from typing import Dict, Optional, Protocol
 
 from x10.perpetual.accounts import StarkPerpetualAccount
@@ -149,21 +150,77 @@ class ExecutionEngine:
             await self._place(side, target_price, target_size)
 
     async def _place(self, side: OrderSide, price: Decimal, size: Decimal) -> None:
-        quantize_step = Decimal(str(self._market_cfg.min_order_size))
-        rounded_size = size.quantize(quantize_step)
+        """Place a rounded order that respects exchange precision:
+        - quantity rounded by `min_order_size_change` (Minimum Change in Trade Size)
+        - price rounded by `min_price_change` (or legacy `price_tick`)
+        """
+        # --- 1) 基本規則（全部轉成 Decimal） ---
+        min_order_size = Decimal(str(self._market_cfg.min_order_size))
 
-        if rounded_size == Decimal("0"):
-            return
+        # 數量步進：優先用交易所的 min_order_size_change；沒有就整數步進 1
+        quantity_step = None
+        msc = getattr(self._market_cfg, "min_order_size_change", None)
+        if msc is not None:
+            try:
+                msc_dec = Decimal(str(msc))
+                if msc_dec > 0:
+                    quantity_step = msc_dec
+            except Exception:
+                pass
+        if quantity_step is None or quantity_step <= 0:
+            quantity_step = Decimal("1")
 
+        # 價格步進：min_price_change > price_tick > fallback
+        price_tick_dec = None
+        mpc = getattr(self._market_cfg, "min_price_change", None)
+        if mpc is not None:
+            try:
+                p = Decimal(str(mpc))
+                if p > 0:
+                    price_tick_dec = p
+            except Exception:
+                pass
+        if price_tick_dec is None:
+            pt = getattr(self._market_cfg, "price_tick", None)
+            if pt is not None:
+                try:
+                    p = Decimal(str(pt))
+                    if p > 0:
+                        price_tick_dec = p
+                except Exception:
+                    pass
+        if price_tick_dec is None or price_tick_dec <= 0:
+            price_tick_dec = Decimal("0.00001")  # 安全預設
+
+        # --- 2) 對齊數量（向下取整到步進，至少滿足最小單量） ---
+        rounded_size = (size / quantity_step).to_integral_value(rounding=ROUND_FLOOR) * quantity_step
+        if rounded_size < min_order_size:
+            # 拉到最小單量，並向上扣齊步進
+            rounded_size = (min_order_size / quantity_step).to_integral_value(rounding=ROUND_CEILING) * quantity_step
+
+        # --- 3) 對齊價格（買單 floor、賣單 ceil） ---
+        if side == OrderSide.BUY:
+            rounded_price = (price / price_tick_dec).to_integral_value(rounding=ROUND_FLOOR) * price_tick_dec
+        else:
+            rounded_price = (price / price_tick_dec).to_integral_value(rounding=ROUND_CEILING) * price_tick_dec
+
+        logging.debug(
+            f"[{self._market}] qty_step={quantity_step} raw_size={size} -> {rounded_size}; "
+            f"min_qty={min_order_size} | price_tick={price_tick_dec} raw_px={price} -> {rounded_price}"
+        )
+
+        # --- 4) 送單 ---
         order = await self._client.place_order(
             market_name=self._market,
             amount_of_synthetic=rounded_size,
-            price=price,
+            price=rounded_price,
             side=side,
             post_only=self._post_only,
             time_in_force=TimeInForce.GTT,
             self_trade_protection_level=self._stp_level,
         )
+
+        # --- 5) 記錄 live order ---
         order_id = getattr(order, "id", None)
         if order_id is None:
             data = getattr(order, "data", None)
@@ -171,9 +228,12 @@ class ExecutionEngine:
                 order_id = getattr(data, "id", None)
         if order_id is None:
             return
-        self._orders[side] = LiveOrder(order_id=order_id, price=price, size=size, side=side)
+
+        # 建議把 live 狀態記成「已對齊後的值」
+        self._orders[side] = LiveOrder(order_id=order_id, price=rounded_price, size=rounded_size, side=side)
         if self._risk_manager:
             self._risk_manager.register_order()
+
 
     async def _cancel(self, live: LiveOrder) -> None:
         await self._client.cancel_order(order_id=live.order_id)

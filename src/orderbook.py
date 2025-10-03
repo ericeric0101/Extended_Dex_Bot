@@ -90,4 +90,7 @@ class OrderBook:
             return None
         mean = sum(returns) / Decimal(len(returns))
         var = sum((r - mean) ** 2 for r in returns) / Decimal(len(returns))
-        return var.sqrt() if hasattr(var, "sqrt") else Decimal(var ** 0.5)
+        std = var.sqrt() if hasattr(var, "sqrt") else Decimal(var ** 0.5)
+
+        # 添加：將標準差限制在合理範圍
+        return min(std, Decimal("0.01"))
