@@ -130,14 +130,13 @@
    python -m src.bot
    ```
 
-## PnL 面板每次刷新時的分解結果，代表 bot 在該市場目前為止的獲利構成：
+## 配置建議（資金提升至 1000 USDC）
 
-- spread_pnl：價差收益。每當掛單被成交時，record_fill() 會用「成交價 − 當下 mid 價」乘上成交量（依買/賣方向帶正負）來計算；理想情況是 Maker 單被打掉產生正的 spread PnL。
-- inventory_pnl：庫存盈虧（也就是 MtM，mark-to-market）。根據目前持有的淨部位 inventory 與 entry_price、當前 mid_price 的差額計算 (mid – entry) * inventory；你看到 0.145626，表示現價比成本高出 0.145626 USD（或合約的名義單位）。
-- fees：手續費累積。record_fee() 會把每筆成交後平台收取的費用（Maker 通常 0，Taker 為負）加總；目前顯示 0，代表尚未發生需付費的成交。
-- funding：資金費（Funding Rate）累積，目前尚未實作填值，所以保持 0。
-- net_pnl：總盈虧，等於前面四項的合計。當前只有庫存盈虧，所以 net_pnl 也為 0.145626。
-
+- `risk.max_net_position_usd`：決定單一方向最大淨敞口。若希望維持 2 倍以內的帳戶槓桿，可設定在 1500～2000 之間（例：1800），讓 bot 有足夠空間補單，但在行情劇烈時仍不會超出 2 倍。
+- `risk.max_open_orders`：若要同時掛多組價格，可視需求提高到 30～40；不打算多層掛單可維持 20。
+- `risk.min_balance_usd`：可以相應提高到 100～200，確保餘額低於這個門檻時會自動停手，避免資金耗盡仍繼續下單。
+- `quote_notional_cap_usd`：代表每邊報價的上限名目金額。資金翻倍後，常見做法是調到 150～200（例如 180），讓單邊掛單的量約佔權益的15%～20%，對沖速度會更快。若搭配更進取的策略，再往上調整即可。
+- 其他參數（`K`、`base_spread`、`inventory_sensitivity` 等）會一起決定實際下單量，調整後建議先用模擬或小額實測，確認波動時不會超出 `max_net_position_usd`。
 
 ## Docker
 專案提供 `docker/Dockerfile`，可建立最小化執行環境。
