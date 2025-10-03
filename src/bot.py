@@ -28,11 +28,19 @@ DEBUG_ACCOUNT_EVENTS = os.getenv("EXTENDED_DEBUG_ACCOUNT_EVENTS", "0") == "1"
 
 @dataclass
 class MarketState:
-    """Mutable per-market state shared across tasks."""
+    """Mutable per-market state shared across任務的市場狀態."""
 
     inventory: Decimal = Decimal("0")
     entry_price: Decimal = Decimal("0")
     mid_price: Decimal | None = None
+
+
+@dataclass
+class AccountState:
+    """紀錄帳戶層級權益與可用資金，供風控動態調整。"""
+
+    equity: Decimal = Decimal("0")
+    available: Decimal = Decimal("0")
 
 
 async def quote_loop(
@@ -44,6 +52,7 @@ async def quote_loop(
     risk_manager: RiskManager,
     pnl: PnLTracker,
     state: MarketState,
+    account_state: AccountState,
 ) -> None:
     funding_rate = Decimal("0")
     quote_interval = max(bot_cfg.quote_loop_ms, 50) / 1000.0
@@ -64,7 +73,13 @@ async def quote_loop(
 
         state.mid_price = mid
 
-        max_net_units = Decimal("0") if max_net_usd <= 0 else max_net_usd / mid
+        leverage_limit = Decimal(str(market_cfg.leverage)) if market_cfg.leverage > 0 else Decimal("0")
+        limited_net_usd = max_net_usd
+        if leverage_limit > 0 and account_state.equity > Decimal("0"):
+            leverage_cap = account_state.equity * leverage_limit
+            limited_net_usd = min(max_net_usd, leverage_cap)
+
+        max_net_units = Decimal("0") if limited_net_usd <= 0 else limited_net_usd / mid
         max_order_units = Decimal("0") if cap_usd <= 0 else cap_usd / mid
 
         if max_order_units <= Decimal("0"):
@@ -76,6 +91,13 @@ async def quote_loop(
             max_net_units = min_units_cfg
         else:
             max_net_units = max(max_net_units, min_units_cfg)
+
+        if limited_net_usd > Decimal("0"):
+            per_side_cap_units = limited_net_usd / mid
+            if per_side_cap_units <= Decimal("0"):
+                per_side_cap_units = min_units_cfg
+            max_order_units = min(max_order_units, per_side_cap_units)
+            max_order_units = max(max_order_units, min_units_cfg)
 
         inventory = state.inventory
         max_order_units = max(max_order_units, abs(inventory))
@@ -140,6 +162,7 @@ async def account_loop(
     stream: AccountStream,
     states: Dict[str, MarketState],
     pnl: PnLTracker,
+    account_state: AccountState,
 ) -> None:
     async for event in stream.updates():
         event_type = event.get("type")
@@ -233,6 +256,25 @@ async def account_loop(
                         current_mid=state.mid_price,
                         entry_price=state.entry_price,
                     )
+
+        elif event_type == "BALANCE":
+            balance = data.get("balance") or {}
+            equity_value = balance.get("equity") or balance.get("Equity")
+            available_value = (
+                balance.get("availableForTrade")
+                or balance.get("available")
+                or balance.get("AvailableForTrade")
+            )
+            if equity_value is not None:
+                try:
+                    account_state.equity = Decimal(str(equity_value))
+                except Exception:
+                    pass
+            if available_value is not None:
+                try:
+                    account_state.available = Decimal(str(available_value))
+                except Exception:
+                    pass
 
 
 async def monitor_pnl(pnl: PnLTracker, interval: float = 1.0) -> None:
@@ -371,6 +413,30 @@ async def run() -> None:
         logging.error(f"--- FAILED to get account info: {e} ---")
         return
 
+    account_state = AccountState()
+    try:
+        balance_payload = json.loads(balance.to_pretty_json())
+        if isinstance(balance_payload, dict):
+            balance_data = balance_payload.get("data") or balance_payload
+            equity_value = balance_data.get("equity") or balance_data.get("Equity")
+            available_value = (
+                balance_data.get("availableForTrade")
+                or balance_data.get("available")
+                or balance_data.get("AvailableForTrade")
+            )
+            if equity_value is not None:
+                try:
+                    account_state.equity = Decimal(str(equity_value))
+                except Exception:
+                    pass
+            if available_value is not None:
+                try:
+                    account_state.available = Decimal(str(available_value))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
     try:
         stp_level = SelfTradeProtectionLevel[bot_cfg.stp.upper()]
     except KeyError:
@@ -387,7 +453,7 @@ async def run() -> None:
     market_states: Dict[str, MarketState] = {cfg.name: MarketState() for cfg in enabled_markets}
 
     tasks = [
-        asyncio.create_task(account_loop(account_stream, market_states, pnl)),
+        asyncio.create_task(account_loop(account_stream, market_states, pnl, account_state)),
         asyncio.create_task(monitor_pnl(pnl, interval=600.0)),  # 10 minutes
     ]
 
@@ -426,6 +492,7 @@ async def run() -> None:
                     risk_manager=risk_manager,
                     pnl=pnl,
                     state=state,
+                    account_state=account_state,
                 )
             )
         )
