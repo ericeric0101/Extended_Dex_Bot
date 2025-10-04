@@ -116,7 +116,8 @@ async def quote_loop(
             buffer_ticks = Decimal("1")
             if hasattr(quote_engine, "last_inventory_ratio"):
                 ratio = quote_engine.last_inventory_ratio()
-                buffer_ticks += (ratio * Decimal("2")).to_integral_value(rounding=ROUND_UP)
+                # Decimal()中的數字表示會加幾個tick作為緩衝
+                buffer_ticks += (ratio * Decimal("1")).to_integral_value(rounding=ROUND_UP)
                 if buffer_ticks < Decimal("1"):
                     buffer_ticks = Decimal("1")
 
