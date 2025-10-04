@@ -1,6 +1,6 @@
 {
   "stp": "ACCOUNT",
-  "quote_loop_ms": 250,
+  "quote_loop_ms": 400,
   "replace_coalesce_ms": 400,
   "DEAD_MANS_SWITCH_SEC": 60,
   "risk": {
@@ -25,17 +25,17 @@
     {
       "name": "ETH-USD",
       "leverage": 2,
-      "K": 4,
+      "K": 3,
       "alpha": 0.001,
       "beta": 0.01,
       "base_spread": 0.0002,
-      "quote_notional_cap_usd": 140,
+      "quote_notional_cap_usd": 200,
       "replace_threshold_bps": 3,
       "min_order_size": 0.01,
       "min_order_size_change": 0.001,
       "min_price_change": 1.0,
       "price_tick": 1.0,
-      "inventory_sensitivity": 1.0,
+      "inventory_sensitivity": 0.8,
       "inventory_spread_multiplier": 0,
       "post_only": true,
       "enabled": true
