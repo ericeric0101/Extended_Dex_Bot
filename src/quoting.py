@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from typing import Optional
+import logging
+import time
 
 from .schemas import QuoteDecision
 
@@ -27,6 +29,8 @@ class QuoteEngine:
 
     def __init__(self, config: MarketQuotingConfig) -> None:
         self._config = config
+        self._last_ratio_log = 0.0
+        self._last_ratio = Decimal("0")
 
     def compute_quote(
         self,
@@ -43,6 +47,19 @@ class QuoteEngine:
         else:
             inventory_ratio = Decimal("0")
 
+        now = time.monotonic()
+        if now - self._last_ratio_log >= 60.0:
+            logging.info(
+                "[%s] inventory_ratio=%.4f (inventory=%s, cap=%s, mid=%s)",
+                self._config.market,
+                float(inventory_ratio),
+                str(inventory),
+                str(cap),
+                str(mid_price),
+            )
+            self._last_ratio_log = now
+        self._last_ratio = inventory_ratio
+
         if inventory > Decimal("0"):
             direction = Decimal("1")
         elif inventory < Decimal("0"):
@@ -58,17 +75,17 @@ class QuoteEngine:
         funding_term = funding_rate if funding_rate is not None else Decimal("0")
 
         # 🔥 核心修改 2：根據庫存比例動態擴大 spread
-        inventory_spread_adjustment = (
-            inventory_ratio
-            * self._config.inventory_spread_multiplier
-            * self._config.base_spread
-        )
+        # inventory_spread_adjustment = (
+        #     inventory_ratio
+        #     * self._config.inventory_spread_multiplier
+        #     * self._config.base_spread
+        # )
 
         half_spread = (
             self._config.base_spread
             + self._config.alpha * sigma_term
             + self._config.beta * (funding_term / Decimal("3"))
-            + inventory_spread_adjustment  # 🔥 庫存越大，價差越大
+            # + inventory_spread_adjustment  # 🔥 庫存越大，價差越大
         )
         
         bid_price = self._floor_to_tick(fair_price * (Decimal("1") - half_spread))
@@ -103,6 +120,11 @@ class QuoteEngine:
             sigma=sigma_term,
             inventory=inventory,
         )
+
+    def last_inventory_ratio(self) -> Decimal:
+        """Return the last computed inventory ratio for adaptive logic."""
+
+        return self._last_ratio
 
     def _base_size(self, mid_price: Decimal) -> Decimal:
         if mid_price <= Decimal("0"):

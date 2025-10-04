@@ -207,6 +207,7 @@ class ExecutionEngine:
         logging.debug(
             f"[{self._market}] qty_step={quantity_step} raw_size={size} -> {rounded_size}; "
             f"min_qty={min_order_size} | price_tick={price_tick_dec} raw_px={price} -> {rounded_price}"
+            f"current_mid={self._orderbook.mid_price() if hasattr(self, '_orderbook') else 'N/A'}"
         )
 
         # --- 4) 送單 ---

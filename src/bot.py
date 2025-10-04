@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN, ROUND_UP
 from typing import Dict, List
 
 import httpx
@@ -105,6 +105,41 @@ async def quote_loop(
         risk_manager.update_limits(max_net_units, max_order_units)
 
         decision = quote_engine.compute_quote(mid, inventory, sigma or Decimal("0"), funding_rate)
+
+        # 當使用 post-only 時，確認報價不會穿過對手價
+        if market_cfg.post_only:
+            best = orderbook.best_prices()
+            tick = Decimal(str(market_cfg.price_tick or market_cfg.min_price_change or 0))
+            if tick <= 0:
+                tick = Decimal("0.0001")
+
+            buffer_ticks = Decimal("1")
+            if hasattr(quote_engine, "last_inventory_ratio"):
+                ratio = quote_engine.last_inventory_ratio()
+                buffer_ticks += (ratio * Decimal("2")).to_integral_value(rounding=ROUND_UP)
+                if buffer_ticks < Decimal("1"):
+                    buffer_ticks = Decimal("1")
+
+            bid_price = decision.bid_price
+            ask_price = decision.ask_price
+
+            if best.ask and bid_price >= best.ask.price:
+                bid_price = best.ask.price - tick * buffer_ticks
+            if best.bid and ask_price <= best.bid.price:
+                ask_price = best.bid.price + tick * buffer_ticks
+
+            if bid_price < Decimal("0"):
+                bid_price = Decimal("0")
+            if ask_price < Decimal("0"):
+                ask_price = Decimal("0")
+
+            if tick > 0:
+                bid_units = (bid_price / tick).to_integral_value(rounding=ROUND_DOWN)
+                ask_units = (ask_price / tick).to_integral_value(rounding=ROUND_UP)
+                bid_price = bid_units * tick
+                ask_price = ask_units * tick
+
+            decision = decision.model_copy(update={"bid_price": bid_price, "ask_price": ask_price})
 
         # 格式化日誌輸出 - 只顯示關鍵信息到小數點後三位
         bid_bps = float((mid - decision.bid_price) / mid * 10000)
