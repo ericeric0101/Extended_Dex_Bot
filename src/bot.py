@@ -334,7 +334,7 @@ async def _orderbook_consumer(
 def _build_quote_engine(market_cfg: MarketConfig) -> QuoteEngine:
     quoting_cfg = MarketQuotingConfig(
         market=market_cfg.name,
-        k=Decimal(str(market_cfg.K)),
+        k_relative_bps=Decimal(str(market_cfg.K)),
         base_spread=Decimal(str(market_cfg.base_spread)),
         alpha=Decimal(str(market_cfg.alpha)),
         beta=Decimal(str(market_cfg.beta)),
@@ -407,12 +407,23 @@ async def _hydrate_market_trading_rules(bot_cfg: BotConfig, settings, endpoints)
                 market_cfg.min_order_size_change = float(min_order_change)
             if price_tick is not None:
                 market_cfg.min_price_change = float(price_tick)
+                market_cfg.price_tick = float(price_tick)
+
+            if market_cfg.min_price_change is not None:
+                server_tick = Decimal(str(market_cfg.min_price_change))
+                if server_tick != Decimal("1.0"):
+                    logging.warning(
+                        f"[{market_cfg.name}] API reports price_tick={server_tick}, "
+                        "but orderbook shows integer prices. Overriding to 1.0"
+                    )
+                    market_cfg.min_price_change = 1.0
+                    market_cfg.price_tick = 1.0
 
             logging.info(
                 f"Hydrated market rules for {market_cfg.name}: "
                 f"min_order_size={market_cfg.min_order_size}, "
                 f"min_order_size_change={market_cfg.min_order_size_change}, "
-                f"price_tick={market_cfg.min_price_change}"
+                f"price_tick={market_cfg.price_tick}"
             )
     finally:
         await rest_client.aclose()

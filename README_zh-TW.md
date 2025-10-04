@@ -46,7 +46,7 @@
 - `min_balance_usd`: 最低可用資金門檻。如果資金 < 50 美元，bot 就不應該再開新單。
 **舉例：**
 1. 剛啟動：
-- 帳戶餘額 1000 USD，ETH 市價 2000 USD。設定max_net_position_usd: 100
+- 帳戶餘額 1000 USD，ETH 市價 2000 USD。設定max_net_position_usd: 100 (**注意**：這個值不要超過總資金的60%)
 - bot 可能會同時掛 0.005 ETH 的 buy order 在 1998，0.005 ETH 的 sell order 在 2002。
 
 2. 假設先成交 buy：
@@ -137,6 +137,35 @@
 - `risk.min_balance_usd`：可以相應提高到 100～200，確保餘額低於這個門檻時會自動停手，避免資金耗盡仍繼續下單。
 - `quote_notional_cap_usd`：代表每邊報價的上限名目金額。資金翻倍後，常見做法是調到 150～200（例如 180），讓單邊掛單的量約佔權益的15%～20%，對沖速度會更快。若搭配更進取的策略，再往上調整即可。
 - 其他參數（`K`、`base_spread`、`inventory_sensitivity` 等）會一起決定實際下單量，調整後建議先用模擬或小額實測，確認波動時不會超出 `max_net_position_usd`。
+
+### 資金量放大時參數需按照以下規則調整
+
+- 需要**保持不變**的參數（比例相關）
+  * base_spread
+  * inventory_sensitivity
+  * inventory_spread_multiplier
+  * replace_threshold_bps
+- 需要**線性縮放**的參數（絕對值相關）
+  * quote_notional_cap_usd (e.g. 資金量100倍這個數值就是100倍) 
+  * max_net_position_usd
+- 需要**重新校準**的參數（視策略而定）
+  * K 值: K 應該與「持倉佔總資金的比例」相關，而不是絕對數量。(目前已將報價模組切換成「相對 K」邏輯)
+
+## 匯出交易／部位／資金費歷史
+
+- 新增 `scripts/export_history.py`，使用 Extended 私有 REST API 匯出帳戶資料。
+- 先在 `.env` 設定 `EXTENDED_API_KEY` 等認證資訊，與主程式共用即可。
+- 範例：只匯出 `ETH-USD` 的交易、歷史部位與資金費，並存入 `history_export/`：
+
+  ```bash
+  python scripts/export_history.py --market ETH-USD --funding-from 0 --output history_export
+  ```
+
+- 若省略 `--market` 則抓取所有市場；`--funding-from` 以毫秒指定資金費起始時間（預設 0）。
+- 執行後會在輸出目錄生成三個 CSV：
+  - `trades.csv`：包含成交數量、名目價值、手續費、Maker/Taker 標記與時間戳。
+  - `positions.csv`：列出開/平倉價格、實現損益、開倉與關閉時間。
+  - `funding.csv`：記錄各筆資金費金額與對應 funding rate。
 
 ## Docker
 專案提供 `docker/Dockerfile`，可建立最小化執行環境。

@@ -83,3 +83,4 @@ logs/
 # Docker artefacts
 *.log
 *.txt
+*.csv
