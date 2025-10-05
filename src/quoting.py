@@ -38,6 +38,8 @@ class QuoteEngine:
         inventory: Decimal,
         sigma: Optional[Decimal],
         funding_rate: Optional[Decimal],
+        best_bid: Optional[Decimal] = None,
+        best_ask: Optional[Decimal] = None,
     ) -> QuoteDecision:
         # 🔥 核心修改 1：根據庫存佔資金比例調整公允價格（相對 K）
         cap = self._config.quote_notional_cap
@@ -88,8 +90,37 @@ class QuoteEngine:
             # + inventory_spread_adjustment  # 🔥 庫存越大，價差越大
         )
         
-        bid_price = self._floor_to_tick(fair_price * (Decimal("1") - half_spread))
-        ask_price = self._ceil_to_tick(fair_price * (Decimal("1") + half_spread))
+        raw_bid = fair_price * (Decimal("1") - half_spread)
+        raw_ask = fair_price * (Decimal("1") + half_spread)
+
+        tick = self._config.price_tick if self._config.price_tick > 0 else Decimal("0.0001")
+
+        bid_price = self._sanitize_price(raw_bid, tick, is_bid=True)
+        ask_price = self._sanitize_price(raw_ask, tick, is_bid=False)
+
+        book_valid = (
+            best_bid is not None
+            and best_ask is not None
+            and best_bid > Decimal("0")
+            and best_ask > Decimal("0")
+            and best_ask - best_bid >= tick
+        )
+
+        if book_valid:
+            buffer_ticks = Decimal("1")
+            if self._last_ratio > Decimal("0"):
+                buffer_ticks += (self._last_ratio * Decimal("1")).to_integral_value(rounding=ROUND_UP)
+            if buffer_ticks < Decimal("1"):
+                buffer_ticks = Decimal("1")
+            if buffer_ticks > Decimal("3"):
+                buffer_ticks = Decimal("3")
+
+            if bid_price >= best_ask:
+                adjusted_bid = best_ask - tick * buffer_ticks
+                bid_price = self._sanitize_price(adjusted_bid, tick, is_bid=True)
+            if ask_price <= best_bid:
+                adjusted_ask = best_bid + tick * buffer_ticks
+                ask_price = self._sanitize_price(adjusted_ask, tick, is_bid=False)
 
         # 🔥 核心修改 3：根據庫存方向與比例調整訂單大小
         base_size = self._base_size(mid_price)
@@ -140,6 +171,25 @@ class QuoteEngine:
         if self._config.max_order_size is not None and adjusted > self._config.max_order_size:
             return self._config.max_order_size
         return adjusted
+
+    def _sanitize_price(self, price: Decimal, tick: Decimal, *, is_bid: bool) -> Decimal:
+        """Ensure price aligns to tick and remains positive."""
+
+        if tick <= Decimal("0"):
+            tick = Decimal("0.0001")
+
+        if price <= Decimal("0"):
+            price = tick
+
+        if is_bid:
+            units = (price / tick).to_integral_value(rounding=ROUND_DOWN)
+        else:
+            units = (price / tick).to_integral_value(rounding=ROUND_UP)
+
+        sanitized = units * tick
+        if sanitized <= Decimal("0"):
+            sanitized = tick
+        return sanitized
 
     def _floor_to_tick(self, price: Decimal) -> Decimal:
         if price <= 0:
