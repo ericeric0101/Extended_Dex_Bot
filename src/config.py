@@ -41,12 +41,21 @@ class MarketConfig(BaseModel):
     alpha: float = 0.5
     beta: float = 0.25
     base_spread: float = 0.001
+    min_half_spread: float = 0.0
+    volatility_spread_multiplier: float = 0.0
+    funding_bias_strength: float = 0.0
     quote_notional_cap_usd: float = 50.0
     replace_threshold_bps: float = 2.0
     min_order_size: float = 0.001
     min_order_size_change: Optional[Decimal] = None
     min_price_change: Optional[Decimal] = None
     price_tick: float = 0.01
+    inventory_sensitivity: float = 1.0
+    inventory_spread_multiplier: float = 0.0
+    inventory_disable_same_side_threshold: float = 0.8
+    position_age_minutes: int = 0
+    position_age_spread_multiplier: float = 0.0
+    position_age_k_multiplier: float = 1.0
     post_only: bool = True
     enabled: bool = True
 

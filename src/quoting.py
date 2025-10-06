@@ -21,8 +21,15 @@ class MarketQuotingConfig:
     max_order_size: Optional[Decimal] = None
     min_order_size: Decimal = Decimal("0")
     price_tick: Decimal = Decimal("0.01")
-    inventory_sensitivity: Decimal = Decimal("5.0")
-    inventory_spread_multiplier: Decimal = Decimal("50.0")
+    inventory_sensitivity: Decimal = Decimal("1.0")
+    inventory_spread_multiplier: Decimal = Decimal("0")
+    min_half_spread: Decimal = Decimal("0")
+    volatility_spread_multiplier: Decimal = Decimal("0")
+    funding_bias_strength: Decimal = Decimal("0")
+    inventory_disable_same_side_threshold: Decimal = Decimal("0.8")
+    position_age_minutes: int = 0
+    position_age_spread_multiplier: Decimal = Decimal("0")
+    position_age_k_multiplier: Decimal = Decimal("1.0")
 
 class QuoteEngine:
     """Compute bid/ask quotes based on inventory and volatility."""
@@ -38,6 +45,7 @@ class QuoteEngine:
         inventory: Decimal,
         sigma: Optional[Decimal],
         funding_rate: Optional[Decimal],
+        position_age_minutes: Optional[float] = None,
         best_bid: Optional[Decimal] = None,
         best_ask: Optional[Decimal] = None,
     ) -> QuoteDecision:
@@ -62,6 +70,12 @@ class QuoteEngine:
             self._last_ratio_log = now
         self._last_ratio = inventory_ratio
 
+        position_age_triggered = (
+            position_age_minutes is not None
+            and self._config.position_age_minutes > 0
+            and position_age_minutes >= self._config.position_age_minutes
+        )
+
         if inventory > Decimal("0"):
             direction = Decimal("1")
         elif inventory < Decimal("0"):
@@ -69,26 +83,44 @@ class QuoteEngine:
         else:
             direction = Decimal("0")
 
-        k_term = self._config.k_relative_bps / Decimal("10000")
+        k_multiplier = Decimal("1")
+        if position_age_triggered and self._config.position_age_k_multiplier > Decimal("0"):
+            k_multiplier *= self._config.position_age_k_multiplier
+
+        k_term = (self._config.k_relative_bps / Decimal("10000")) * k_multiplier
         inventory_price_adjustment = direction * mid_price * k_term * inventory_ratio
         fair_price = mid_price - inventory_price_adjustment
 
         sigma_term = sigma if sigma is not None else Decimal("0")
         funding_term = funding_rate if funding_rate is not None else Decimal("0")
 
-        # 🔥 核心修改 2：根據庫存比例動態擴大 spread
-        # inventory_spread_adjustment = (
-        #     inventory_ratio
-        #     * self._config.inventory_spread_multiplier
-        #     * self._config.base_spread
-        # )
+        dynamic_multiplier = Decimal("1") + (self._config.volatility_spread_multiplier * sigma_term)
+        if dynamic_multiplier < Decimal("0"):
+            dynamic_multiplier = Decimal("0")
+        base_component = self._config.base_spread * dynamic_multiplier
 
-        half_spread = (
-            self._config.base_spread
-            + self._config.alpha * sigma_term
-            + self._config.beta * (funding_term / Decimal("3"))
-            # + inventory_spread_adjustment  # 🔥 庫存越大，價差越大
+        inventory_spread_adjustment = (
+            inventory_ratio * self._config.inventory_spread_multiplier * self._config.base_spread
         )
+
+        funding_component = self._config.beta * abs(funding_term)
+        half_spread = base_component + (self._config.alpha * sigma_term) + funding_component + inventory_spread_adjustment
+
+        age_spread_multiplier = Decimal("1")
+        if position_age_triggered and self._config.position_age_spread_multiplier > Decimal("0"):
+            age_spread_multiplier += self._config.position_age_spread_multiplier
+        half_spread *= age_spread_multiplier
+
+        if self._config.min_half_spread > Decimal("0") and half_spread < self._config.min_half_spread:
+            half_spread = self._config.min_half_spread
+
+        funding_bias = self._config.funding_bias_strength * funding_term * inventory_ratio
+        if funding_bias != 0 and direction != 0:
+            fair_price -= direction * mid_price * funding_bias
+
+        if position_age_triggered and direction != 0 and self._config.position_age_spread_multiplier > Decimal("0"):
+            flatten_bias = inventory_ratio * self._config.position_age_spread_multiplier
+            fair_price -= direction * mid_price * flatten_bias
         
         raw_bid = fair_price * (Decimal("1") - half_spread)
         raw_ask = fair_price * (Decimal("1") + half_spread)
@@ -135,7 +167,10 @@ class QuoteEngine:
 
         # 🔥 核心修改 3：根據庫存方向與比例調整訂單大小
         base_size = self._base_size(mid_price)
-        skew = direction * base_size * self._config.inventory_sensitivity * inventory_ratio
+        inventory_sensitivity = self._config.inventory_sensitivity
+        if position_age_triggered and self._config.position_age_spread_multiplier > Decimal("0"):
+            inventory_sensitivity *= Decimal("1") + (self._config.position_age_spread_multiplier / Decimal("2"))
+        skew = direction * base_size * inventory_sensitivity * inventory_ratio
 
         # 持有多單時：減小買單、增大賣單
         # 持有空單時：增大買單、減小賣單
@@ -143,7 +178,11 @@ class QuoteEngine:
         ask_size = self._clip_size(base_size + skew)
 
         # 🔥 新增：極端情況處理 - 如果庫存過大，完全取消同向訂單
-        inventory_threshold_ratio = Decimal("0.8")
+        inventory_threshold_ratio = self._config.inventory_disable_same_side_threshold
+        if inventory_threshold_ratio <= Decimal("0"):
+            inventory_threshold_ratio = Decimal("1")
+        if inventory_threshold_ratio > Decimal("1"):
+            inventory_threshold_ratio = Decimal("1")
 
         if inventory_ratio > inventory_threshold_ratio:
             if direction > 0:

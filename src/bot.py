@@ -5,9 +5,10 @@ import asyncio
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import httpx
 from x10.perpetual.orders import SelfTradeProtectionLevel
@@ -33,6 +34,16 @@ class MarketState:
     inventory: Decimal = Decimal("0")
     entry_price: Decimal = Decimal("0")
     mid_price: Decimal | None = None
+    position_open_time: float | None = None
+    last_rebalance_notice: float = 0.0
+
+    def inventory_age_minutes(self) -> Optional[float]:
+        if self.position_open_time is None or self.inventory == Decimal("0"):
+            return None
+        elapsed = time.monotonic() - self.position_open_time
+        if elapsed < 0:
+            return 0.0
+        return elapsed / 60.0
 
 
 @dataclass
@@ -73,6 +84,12 @@ async def quote_loop(
 
         state.mid_price = mid
 
+        if state.inventory == Decimal("0"):
+            state.position_open_time = None
+            state.last_rebalance_notice = 0.0
+        elif state.position_open_time is None:
+            state.position_open_time = time.monotonic()
+
         leverage_limit = Decimal(str(market_cfg.leverage)) if market_cfg.leverage > 0 else Decimal("0")
         limited_net_usd = max_net_usd
         if leverage_limit > 0 and account_state.equity > Decimal("0"):
@@ -105,12 +122,14 @@ async def quote_loop(
         risk_manager.update_limits(max_net_units, max_order_units)
 
         best = orderbook.best_prices()
+        age_minutes = state.inventory_age_minutes()
 
         decision = quote_engine.compute_quote(
             mid,
             inventory,
             sigma or Decimal("0"),
             funding_rate,
+            position_age_minutes=age_minutes,
             best_bid=best.bid.price if best and best.bid else None,
             best_ask=best.ask.price if best and best.ask else None,
         )
@@ -123,10 +142,12 @@ async def quote_loop(
         if log_counter % log_interval_loops == 0:
             bid_bps = float((mid - decision.bid_price) / mid * 10000)
             ask_bps = float((decision.ask_price - mid) / mid * 10000)
+            age_display = age_minutes if age_minutes is not None else 0.0
             logging.info(
                 f"[{market_cfg.name}] "
                 f"mid={float(mid):.2f} | "
                 f"inventory={float(inventory):.4f} | "
+                f"age={age_display:.1f}m | "
                 f"fair_price={float(decision.fair_price):.2f} | "
                 f"σ={float(sigma or 0):.5f} | "
                 f"inv={float(inventory):.3f} | "
@@ -134,6 +155,23 @@ async def quote_loop(
                 f"ask={float(decision.ask_price):.2f} (+{ask_bps:.2f}bps) | "
                 f"spread={float(decision.half_spread * 10000):.2f}bps"
             )
+
+        if (
+            age_minutes is not None
+            and market_cfg.position_age_minutes > 0
+            and age_minutes >= market_cfg.position_age_minutes
+        ):
+            now_notice = time.monotonic()
+            if now_notice - state.last_rebalance_notice >= 60.0:
+                logging.warning(
+                    "[%s] Inventory aged %.1fm >= %sm: tightening exit bias (K x%.2f, spread x%.2f)",
+                    market_cfg.name,
+                    age_minutes,
+                    market_cfg.position_age_minutes,
+                    float(market_cfg.position_age_k_multiplier),
+                    float(Decimal("1") + Decimal(str(market_cfg.position_age_spread_multiplier))),
+                )
+                state.last_rebalance_notice = now_notice
         
         log_counter += 1
         
@@ -190,7 +228,15 @@ async def account_loop(
                 size = Decimal(str(pos.get("size", "0")))
                 side = (pos.get("side") or "").upper()
                 signed_size = size if side != "SHORT" else -size
+                prev_inventory = state.inventory
                 state.inventory = signed_size
+                if state.inventory == Decimal("0"):
+                    state.position_open_time = None
+                    state.last_rebalance_notice = 0.0
+                elif prev_inventory == Decimal("0") or (prev_inventory > 0 and state.inventory < 0) or (
+                    prev_inventory < 0 and state.inventory > 0
+                ):
+                    state.position_open_time = time.monotonic()
                 entry_price_value = (
                     pos.get("open_price")
                     or pos.get("openPrice")
@@ -220,6 +266,8 @@ async def account_loop(
                 state.inventory = Decimal("0")
                 state.entry_price = Decimal("0")
                 state.mid_price = None
+                state.position_open_time = None
+                state.last_rebalance_notice = 0.0
 
         elif event_type == "TRADE":
             trades = data.get("trades") or []
@@ -270,6 +318,13 @@ async def account_loop(
                         weighted = (abs(prev_inventory) * state.entry_price) + (size * price)
                         state.entry_price = weighted / (abs(prev_inventory) + size)
                 state.inventory = updated_inventory
+                if state.inventory == Decimal("0"):
+                    state.position_open_time = None
+                    state.last_rebalance_notice = 0.0
+                elif prev_inventory == Decimal("0") or (prev_inventory > 0 and state.inventory < 0) or (
+                    prev_inventory < 0 and state.inventory > 0
+                ):
+                    state.position_open_time = time.monotonic()
 
                 mid = state.mid_price or price
                 pnl.record_fill(price=price, size=size, side=(trade.get("side") or ""), mid_at_fill=mid)
@@ -314,6 +369,8 @@ async def account_loop(
                         state.inventory = Decimal("0")
                         state.entry_price = Decimal("0")
                         state.mid_price = None
+                        state.position_open_time = None
+                        state.last_rebalance_notice = 0.0
 
 
 async def monitor_pnl(pnl: PnLTracker, interval: float = 1.0) -> None:
@@ -345,11 +402,20 @@ def _build_quote_engine(market_cfg: MarketConfig) -> QuoteEngine:
         market=market_cfg.name,
         k_relative_bps=Decimal(str(market_cfg.K)),
         base_spread=Decimal(str(market_cfg.base_spread)),
+        min_half_spread=Decimal(str(market_cfg.min_half_spread)),
+        volatility_spread_multiplier=Decimal(str(market_cfg.volatility_spread_multiplier)),
+        funding_bias_strength=Decimal(str(market_cfg.funding_bias_strength)),
         alpha=Decimal(str(market_cfg.alpha)),
         beta=Decimal(str(market_cfg.beta)),
         quote_notional_cap=Decimal(str(market_cfg.quote_notional_cap_usd)),
         min_order_size=Decimal(str(market_cfg.min_order_size)),
         price_tick=Decimal(str(market_cfg.price_tick)),
+        inventory_sensitivity=Decimal(str(market_cfg.inventory_sensitivity)),
+        inventory_spread_multiplier=Decimal(str(market_cfg.inventory_spread_multiplier)),
+        inventory_disable_same_side_threshold=Decimal(str(market_cfg.inventory_disable_same_side_threshold)),
+        position_age_minutes=market_cfg.position_age_minutes,
+        position_age_spread_multiplier=Decimal(str(market_cfg.position_age_spread_multiplier)),
+        position_age_k_multiplier=Decimal(str(market_cfg.position_age_k_multiplier)),
     )
     return QuoteEngine(config=quoting_cfg)
 

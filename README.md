@@ -18,9 +18,9 @@ Compliance-first market-making MVP for Extended perpetuals. The bot streams orde
 
 ## Trading Logic Overview
 - **Quoting**
-  - `QuoteEngine.compute_quote` shifts the reservation price with `fair_price = mid + inventory * k_relative`.
-  - Half spread = `base_spread + alpha * σ + beta * (funding / 3)` and is applied symmetrically to form bid/ask.
-  - Base order size comes from the USD notional cap divided by mid price; inventory skew (`inventory_sensitivity`) reshapes each side and enforces max order size.
+  - `QuoteEngine.compute_quote` leans the reservation price with inventory ratio, boosts `K` when positions age, and applies a funding bias so resting inventory is pushed toward the exit.
+  - Half spread starts from `base_spread`, scales with volatility (`alpha`, `volatility_spread_multiplier`), funding, inventory pressure, and honours a configurable floor to stay above maker fees.
+  - Base order size comes from the USD notional cap divided by mid price; inventory skew (`inventory_sensitivity`) reshapes each side and enforces max order size, while aged inventory widens the opposite quote.
 - **Execution / Hedging**
   - `ExecutionEngine` tracks live quotes; when prices move beyond replace thresholds or size changes, it cancels and re-places. Incoming fills create positions; opposite-side fills unwind them.
   - `RiskManager` enforces net-position and open-order limits. When limits are breached it zeroes target size to force cancels and bring exposure back inside the envelope.
@@ -29,7 +29,7 @@ Compliance-first market-making MVP for Extended perpetuals. The bot streams orde
 - Asynchronous REST and WebSocket clients with retry/backoff and mandatory headers.
 - Local order book reconstruction with rolling volatility estimate.
 - Multi-market quoting based on the `config.json` enable flags.
-- Quoting engine supports funding adjustments, inventory skew, minimum order size, and converts USD caps to contract size.
+- Quoting engine supports funding-driven biasing, inventory skew, volatility-linked base spreads, minimum spread floors, and converts USD caps to contract size.
 - Execution module honours replace thresholds, post-only, and self-trade protection; Dead Man’s Switch handles disconnect fail-safes.
 - PnL scaffold decomposes spread, inventory, fees, and funding.
 - Unit-test skeletons for order book replay and risk behaviour.
@@ -53,10 +53,16 @@ Compliance-first market-making MVP for Extended perpetuals. The bot streams orde
 - `alpha`: inventory aversion. Larger values avoid one-sided positions faster.
 - `beta`: volatility sensitivity. Larger values widen spread during high σ periods.
 - `base_spread`: baseline edge. Smaller values hug the mid and increase fill rate; if orders never trade, tighten `base_spread` gradually.
+- `min_half_spread`: floor (per side) applied after volatility/funding adjustments to keep edge above maker fee plus a safety margin.
 - `quote_notional_cap_usd`: USD cap per side. Example: 50 → each side is limited to 50 USD notionals.
 - `replace_threshold_bps`: minimum price drift (in basis points) before refreshing quotes, reducing churn from tiny moves.
 - `min_order_size`: exchange minimum size per order.
+- `volatility_spread_multiplier`: scales `base_spread` directly with σ to widen markets during turbulence.
+- `inventory_spread_multiplier`: widens half spread in proportion to inventory ratio, making the exit leg more aggressive.
+- `funding_bias_strength`: shifts the reservation price against costly funding so aged positions are nudged toward flat faster.
 - `post_only`: whether to enforce maker-only orders.
+- `inventory_disable_same_side_threshold`: ratio of inventory vs. notional cap where same-direction orders are cancelled to stop compounding risk.
+- `position_age_minutes`, `position_age_spread_multiplier`, `position_age_k_multiplier`: when inventory rests longer than the threshold, multiply `K` and widen the opposite quote to prioritise flattening.
 - `makerFeeRate` / `takerFeeRate`: overrides for fees; `null` uses the account defaults from the CONFIG event.
 
 ### How to Tune a New Market

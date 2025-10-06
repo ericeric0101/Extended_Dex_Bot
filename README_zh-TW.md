@@ -16,9 +16,9 @@
 
 ## 交易邏輯概述
 - **報價邏輯**：
-  - `QuoteEngine.compute_quote` 以 `fair_price = mid + inventory * k` 調整公平價。
-  - 半點差為 `base_spread + alpha * σ + beta * (funding / 3)`，並轉換成 bid/ask。
-  - 基礎下單量由名義上限除以中價計算，再以庫存傾斜 (`inventory_sensitivity`) 調整雙邊尺寸，並限制於最大下單量。
+  - `QuoteEngine.compute_quote` 會依庫存佔比調整公平價，持倉超過門檻時自動放大 K 並導入資金費偏壓，加速把部位打平。
+  - 半點差從 `base_spread` 起算，搭配 σ (`alpha`、`volatility_spread_multiplier`)、資金費與庫存壓力動態擴大，並套用最小點差以維持正期望值。
+  - 基礎下單量由名目上限除以中價取得；`inventory_sensitivity` 與 `inventory_spread_multiplier` 調整雙邊尺寸，庫存逾時後會再度放大反向掛單。
 - **開倉 / 平倉**：
   - `ExecutionEngine` 追蹤雙邊掛單，當價格偏離門檻或尺寸改變時撤單重下。掛單被撮合即形成開倉，反向成交則減倉或平倉。
   - 風控 (`RiskManager`) 監控淨部位與掛單上限，超限時拒絕新報價並透過 size=0 促使撤單，以回復到允許區間。
@@ -27,7 +27,7 @@
 - 非同步 REST 與 WebSocket 連線，搭配 retry/backoff 與必要標頭。
 - 本地訂單簿重建，並計算滾動波動度。
 - 多市場報價：依 `config.json` 中啟用的市場啟動對應的訂單簿、風控與執行協程。
-- 報價引擎支援資金費調整、庫存傾斜與最小下單量門檻；風控將 USD 名目限制轉為合約數量。
+- 報價引擎支援資金費偏壓、庫存傾斜、波動度連動點差、最小點差保護與最小下單量門檻；風控將 USD 名目限制轉為合約數量。
 - 執行模組帶入 post-only 與自成交保護層級（STP），並以 Dead Man's Switch 做掉線防護。
 - PnL 拆解骨架：價差、庫存、手續費、資金費。
 - 單元測試：訂單簿回放、風控行為。
@@ -38,6 +38,13 @@
 - `dead_mans_switch_sec`: 啟動時呼叫 `/user/deadmanswitch` 的倒數秒數。
 - `risk`: 以 USD 表示的淨部位與帳戶餘額限制；程式會依當前中價換算合約數量。
 - `markets`: 可為多個市場設定 K / α / β、名目上限、最小下單量、post-only 與啟用開關。
+- 進階市場參數：
+  - `min_half_spread`: 半邊最低點差，確保價格邊際大於 maker 費率與安全緩衝。
+  - `volatility_spread_multiplier`: 讓 `base_spread` 隨 σ 動態放大或縮小。
+  - `inventory_spread_multiplier`: 根據庫存比例擴大點差，使反向單更積極。
+  - `inventory_disable_same_side_threshold`: 庫存占比超過門檻時，暫停同向掛單防止風險累積。
+  - `position_age_minutes` / `position_age_spread_multiplier` / `position_age_k_multiplier`: 庫存停留超過指定分鐘後，放大 K 與反向點差，加速平倉。
+  - `funding_bias_strength`: 依資金費方向調整公平價，避免長時間持有高成本部位。
 - `fees_override`: 可覆寫 maker/taker 費率（填 `null` 時改用 API `CONFIG` 事件或 `/user/fees`）。
 - `quote_loop_ms`: 做市循環（下新報價/檢查市場）的時間間隔（毫秒）。250ms = 每秒約 4 次更新。
 - `replace_coalesce_ms`: 「報價合併間隔」：如果在這段時間內出現多次更新需求，就合併成一次改單，避免頻繁撤掛。400ms → 意思是 0.4 秒內重複觸發的更新會併成一次。
