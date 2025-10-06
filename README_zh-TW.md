@@ -1,5 +1,7 @@
 # extended-mm-bot（繁體中文說明）
 
+[邀請碼連結](https://app.extended.exchange/join/EHMJ): 使用我的連結可賺取10%手續費返利。
+
 符合合規要求的 Extended 永續合約做市 MVP。此機器人串流訂單簿、以簡化 Avellaneda–Stoikov 模型計算庫存傾斜報價，並透過 X10 Python SDK 管理訂單。
 
 ## 系統概述

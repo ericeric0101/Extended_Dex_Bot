@@ -1,5 +1,7 @@
 [中文說明](README_zh-TW.md)
 
+[Extended referral link](https://app.extended.exchange/join/EHMJ): Refer users to earn 10% commission.
+
 # extended-mm-bot
 
 Compliance-first market-making MVP for Extended perpetuals. The bot streams order books, computes simplified Avellaneda–Stoikov quotes with inventory skew, and manages orders through the X10 Python SDK.
