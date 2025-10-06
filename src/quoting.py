@@ -122,6 +122,17 @@ class QuoteEngine:
                 adjusted_ask = best_bid + tick * buffer_ticks
                 ask_price = self._sanitize_price(adjusted_ask, tick, is_bid=False)
 
+        # 若簿面不穩定或調整後的價格偏離中價太多，直接取消該方向下單
+        price_band = Decimal("0.05")  # 允許 ±5% 偏離
+        max_deviation = mid_price * price_band
+
+        if bid_price <= Decimal("0") or abs(bid_price - mid_price) > max_deviation:
+            bid_price = Decimal("0")
+            bid_size = Decimal("0")
+        if ask_price <= Decimal("0") or abs(ask_price - mid_price) > max_deviation:
+            ask_price = Decimal("0")
+            ask_size = Decimal("0")
+
         # 🔥 核心修改 3：根據庫存方向與比例調整訂單大小
         base_size = self._base_size(mid_price)
         skew = direction * base_size * self._config.inventory_sensitivity * inventory_ratio
