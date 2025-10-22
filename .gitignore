@@ -68,8 +68,9 @@ ENV/
 *.swp
 *~
 
-# Environment & secrets
-.env
+# Environments
+/.env
+venv/
 .env.*
 *.env
 
